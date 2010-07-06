@@ -1,6 +1,15 @@
 = nagiosharder
 
-Description goes here.
+Scrape and meander Nagios installs from ruby.
+
+
+  require 'nagiosharder'
+  site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password')
+  
+  puts site.host_status('myhost')
+  site.schedule_service_check('myhost')
+
+To be continue?
 
 == Note on Patches/Pull Requests
  
