@@ -1,19 +1,20 @@
 require 'restclient'
 require 'nokogiri'
-require 'activesupport'
+require 'active_support'
 require 'httparty'
 
 class NagiosHarder
   class Site
-    attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies
+    attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version
     include HTTParty::ClassMethods
 
-    def initialize(nagios_url, user, password)
+    def initialize(nagios_url, user, password, version = 3)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
       @password = password
       @default_options = {}
       @default_cookies = {}
+      @version = version
       basic_auth(@user, @password) if @user && @password
     end
 
@@ -25,14 +26,31 @@ class NagiosHarder
       "#{nagios_url}/cmd.cgi"
     end
 
+    def schedule_downtime(host)
+      response = post(cmd_url, :body => {
+                                          :cmd_typ => 55,
+                                          :cmd_mod => 2,
+                                          :host => host, # host name
+                                          :com_author => 'nagiosharder', # author
+                                          :com_data => 'maintenance', # comment
+                                          :trigger => '0', # n/a
+                                          :start_time => formatted_time_for(Time.now),
+                                          :end_time => formatted_time_for(Time.now + 7200),
+                                          :fixed => '1', # 1 for true or 0 for false
+                                          :hours => '2', # if flexible
+                                          :minutes => '0' # if flexible
+                                        })
+      response.code == 200 && response.body =~ /successful/
+    end
+
     def schedule_service_check(host)
       response = post(cmd_url, :body => {
-                                         :start_time => Time.now,
-                                         :host => host,
-                                         :force_check => true,
-                                         :cmd_typ => 92,
-                                         :cmd_mod => 2
-                                       })
+                                          :start_time => Time.now,
+                                          :host => host,
+                                          :force_check => true,
+                                          :cmd_typ => 92,
+                                          :cmd_mod => 2
+                                        })
 
       response.code == 200 && response.body =~ /successful/
     end
@@ -75,7 +93,15 @@ class NagiosHarder
       end
     end
 
+    private
+
+    def formatted_time_for(time)
+      if @version.to_i < 3
+        time.strftime("%m-%d-%Y %H:%M:%S")
+      else 
+        time.strftime("%Y-%m-%d %H:%M:%S")
+      end
+    end
+    
   end
-
-
 end

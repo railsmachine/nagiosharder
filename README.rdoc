@@ -2,12 +2,13 @@
 
 Scrape and meander Nagios installs from ruby.
 
-
   require 'nagiosharder'
-  site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password')
+  site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version')
+  # version defaults to 3
   
   puts site.host_status('myhost')
   site.schedule_service_check('myhost')
+  site.schedule_downtime('myhost') # schedules 2 hours of downtime
 
 To be continue?
 
