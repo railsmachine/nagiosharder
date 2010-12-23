@@ -1,6 +1,6 @@
 require 'restclient'
 require 'nokogiri'
-require 'active_support'
+require 'active_support/core_ext/array'
 require 'httparty'
 
 class NagiosHarder
@@ -42,7 +42,20 @@ class NagiosHarder
                                         })
       response.code == 200 && response.body =~ /successful/
     end
-
+    
+    def cancel_downtime(downtime_id, downtime_type = :host_downtime)
+      downtime_types = {
+        :host_downtime => 78,
+        :service_downtime => 79
+      }
+      response = post(cmd_url, :body => {
+                                        :cmd_typ => downtime_types[downtime_type],
+                                        :cmd_mod => 2,
+                                        :down_id => downtime_id
+                                        })
+      response.code == 200 && response.body =~ /successful/
+    end
+    
     def schedule_service_check(host)
       response = post(cmd_url, :body => {
                                           :start_time => Time.now,
@@ -51,7 +64,6 @@ class NagiosHarder
                                           :cmd_typ => 92,
                                           :cmd_mod => 2
                                         })
-
       response.code == 200 && response.body =~ /successful/
     end
 
