@@ -5,8 +5,9 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "nagiosharder"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.version = "0.1.0.pre"
+    gem.summary = %Q{Nagios access at your ruby fingertips}
+    gem.description = %Q{Nagios access at your ruby fingertips}
     gem.email = "josh@technicalpickles.com"
     gem.homepage = "http://github.com/technicalpickles/nagiosharder"
     gem.authors = ["Joshua Nichols"]
