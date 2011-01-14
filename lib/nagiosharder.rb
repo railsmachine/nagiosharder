@@ -34,19 +34,20 @@ class NagiosHarder
     end
 
     def schedule_downtime(host)
-      response = post(cmd_url, :body => {
-                                          :cmd_typ => 55,
-                                          :cmd_mod => 2,
-                                          :host => host, # host name
-                                          :com_author => 'nagiosharder', # author
-                                          :com_data => 'maintenance', # comment
-                                          :trigger => '0', # n/a
-                                          :start_time => formatted_time_for(Time.now),
-                                          :end_time => formatted_time_for(Time.now + 7200),
-                                          :fixed => '1', # 1 for true or 0 for false
-                                          :hours => '2', # if flexible
-                                          :minutes => '0' # if flexible
-                                        })
+      request = {
+                  :cmd_typ => 55,
+                  :cmd_mod => 2,
+                  :host => host, # host name
+                  :com_author => 'nagiosharder', # author
+                  :com_data => 'maintenance', # comment
+                  :trigger => '0', # n/a
+                  :start_time => formatted_time_for(Time.now),
+                  :end_time => formatted_time_for(Time.now + 7200),
+                  :fixed => '1', # 1 for true or 0 for false
+                  :hours => '2', # if flexible
+                  :minutes => '0' # if flexible
+                }
+      response = post(cmd_url, :body => request)
       response.code == 200 && response.body =~ /successful/
     end
     
@@ -184,7 +185,13 @@ class NagiosHarder
             host = last_host
           end
 
-          service = columns[1].inner_text.gsub(/\n/, '') if columns[1]
+          #require 'ruby-debug'; breakpoint
+          if columns[1]
+            service_links = columns[1].css('td a')
+            service = service_links[0].inner_html
+            acknowledged = service_links.size == 3 # acknowledged servies have a link to the service, link to comments, and a link to unacknowledge
+          end
+          
           status = columns[2].inner_html  if columns[2]
           last_check = columns[3].inner_html if columns[3]
           duration = columns[4].inner_html if columns[4]
@@ -208,7 +215,8 @@ class NagiosHarder
             :duration => duration,
             :attempts => attempts,
             :started_at => started_at,
-            :extended_info => status_info
+            :extended_info => status_info,
+            :acknowledged => acknowledged
           }
 
           if host && service && status && last_check && duration && attempts && started_at && status_info
