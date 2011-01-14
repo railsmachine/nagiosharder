@@ -1,6 +1,13 @@
 require 'restclient'
 require 'nokogiri'
 require 'active_support/core_ext/array'
+require 'active_support/core_ext/numeric/time'
+require 'active_support/core_ext/time/calculations'
+require 'active_support/core_ext/date/calculations'
+require 'active_support/core_ext/date_time/calculations'
+require 'active_support/core_ext/date/acts_like'
+require 'active_support/core_ext/time/acts_like'
+require 'active_support/core_ext/date_time/acts_like'
 require 'httparty'
 
 class NagiosHarder
@@ -67,42 +74,54 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
+    def service_status(type)
+      service_status_type = case type
+                            when :ok then 2
+                            when :warning then 4
+                            when :unknown then 8
+                            when :critical then 16
+                            when :pending then 1
+                            when :all_problems then 28
+                            when :all then nil
+                            else
+                              raise "Unknown type"
+                            end
+
+      params = {
+        'hoststatustype' => 15,
+        'servicestatustype' => service_status_type,
+        'host' => 'all'
+      }
+
+
+      query = [
+        "host=all",
+        service_status_type ? "servicestatustypes=#{service_status_type}" : nil,
+        "hoststatustypes=15"
+      ].compact.join('&')
+      url = "#{status_url}?#{query}"
+      response = get(url)
+
+      statuses = []
+      parse_status_html(response) do |status|
+        statuses << status
+      end
+
+      statuses
+    end
+
     def host_status(host)
       host_status_url = "#{status_url}?host=#{host}"
       response =  get(host_status_url)
 
       raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
-      doc = Nokogiri::HTML(response)
-      rows = doc.css('table.status > tr > td').to_a.in_groups_of(7)
 
-      rows.inject({}) do |services, row|
-        service = row[1].inner_text.gsub(/\n/, '')
-        status = row[2].inner_html
-        last_check = row[3].inner_html
-        duration = row[4].inner_html
-        started_at = if match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
-                       (
-                         match_data[1].to_i.days +
-                         match_data[2].to_i.hours +
-                         match_data[3].to_i.minutes +
-                         match_data[4].to_i.seconds
-                       ).ago
-
-                     end
-        attempts = row[5].inner_html
-        status_info = row[6].inner_html.gsub('&nbsp;', '')
-
-        services[service] = {
-          :status => status,
-          :last_check => last_check,
-          :duration => duration,
-          :attempts => attempts,
-          :started_at => started_at,
-          :extended_info => status_info
-        }
-
-        services
+      services = {}
+      parse_status_html(response) do |status|
+        services[status[:service]] = status
       end
+
+      services
     end
 
     private
@@ -113,6 +132,63 @@ class NagiosHarder
       else 
         time.strftime("%Y-%m-%d %H:%M:%S")
       end
+    end
+
+    def parse_status_html(response)
+      doc = Nokogiri::HTML(response)
+      rows = doc.css('table.status > tr')
+
+      last_host = nil
+      rows.each do |row|
+        columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
+        if columns.any?
+          #require 'ruby-debug'; breakpoint
+
+          host = columns[0].inner_text.gsub(/\n/, '')
+
+          # for a given host, the host details are blank after the first row
+          if host != ''
+            # remember it for next time
+            last_host = host
+          else
+            # or save it for later
+            host = last_host
+          end
+
+          service = columns[1].inner_text.gsub(/\n/, '') if columns[1]
+          status = columns[2].inner_html  if columns[2]
+          last_check = columns[3].inner_html if columns[3]
+          duration = columns[4].inner_html if columns[4]
+          started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
+                         (
+                           match_data[1].to_i.days +
+                           match_data[2].to_i.hours +
+                           match_data[3].to_i.minutes +
+                           match_data[4].to_i.seconds
+                         ).ago
+
+                       end
+          attempts = columns[5].inner_html if columns[5]
+          status_info = columns[6].inner_html.gsub('&nbsp;', '') if columns[6]
+
+          status = {
+            :host => host,
+            :service => service,
+            :status => status,
+            :last_check => last_check,
+            :duration => duration,
+            :attempts => attempts,
+            :started_at => started_at,
+            :extended_info => status_info
+          }
+
+          if host && service && status && last_check && duration && attempts && started_at && status_info
+            yield status
+          end
+        end
+      end
+
+      nil
     end
     
   end
