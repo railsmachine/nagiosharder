@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{nagiosharder}
-  s.version = "0.1.0.pre"
+  s.version = "0.1.0.pre2"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Joshua Nichols"]
@@ -22,6 +22,7 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "lib/nagiosharder.rb",
+    "nagiosharder.gemspec",
     "spec/nagiosharder_spec.rb",
     "spec/spec.opts",
     "spec/spec_helper.rb"
@@ -40,11 +41,23 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<rest-client>, ["~> 1.6.1"])
+      s.add_runtime_dependency(%q<nokogiri>, ["~> 1.4.3"])
+      s.add_runtime_dependency(%q<activesupport>, ["~> 3.0.3"])
+      s.add_runtime_dependency(%q<httparty>, ["~> 0.6.1"])
       s.add_development_dependency(%q<rspec>, [">= 1.2.9"])
     else
+      s.add_dependency(%q<rest-client>, ["~> 1.6.1"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.4.3"])
+      s.add_dependency(%q<activesupport>, ["~> 3.0.3"])
+      s.add_dependency(%q<httparty>, ["~> 0.6.1"])
       s.add_dependency(%q<rspec>, [">= 1.2.9"])
     end
   else
+    s.add_dependency(%q<rest-client>, ["~> 1.6.1"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.4.3"])
+    s.add_dependency(%q<activesupport>, ["~> 3.0.3"])
+    s.add_dependency(%q<httparty>, ["~> 0.6.1"])
     s.add_dependency(%q<rspec>, [">= 1.2.9"])
   end
 end

@@ -74,7 +74,7 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
-    def service_status(type)
+    def service_status(type, options = {})
       service_status_type = case type
                             when :ok then 2
                             when :warning then 4
@@ -87,6 +87,27 @@ class NagiosHarder
                               raise "Unknown type"
                             end
 
+      sort_type = case options[:sort_type]
+                  when :asc then 1
+                  when :desc then 2
+                  when nil then nil
+                  else
+                    raise "Invalid options[:sort_type]"
+                  end
+
+      sort_option = case options[:sort_option]
+                    when :host then 1
+                    when :service then 2
+                    when :status then 3
+                    when :last_check then 4
+                    when :duration then 6
+                    when :attempts then 5
+                    when nil then nil
+                    else
+                      raise "Invalid options[:sort_option]"
+                    end
+
+
       params = {
         'hoststatustype' => 15,
         'servicestatustype' => service_status_type,
@@ -94,13 +115,22 @@ class NagiosHarder
       }
 
 
-      query = [
-        "host=all",
-        service_status_type ? "servicestatustypes=#{service_status_type}" : nil,
-        "hoststatustypes=15"
-      ].compact.join('&')
+      params = if @version == 3
+                 [ "servicegroup=all", "style=detail" ]
+               else
+                 [ "host=all" ]
+               end
+      params += [
+                  service_status_type ? "servicestatustypes=#{service_status_type}" : nil,
+                  sort_type ? "sorttype=#{sort_type}" : nil,
+                  sort_option ? "sortoption=#{sort_option}" : nil,
+                  "hoststatustypes=15"
+                ]
+      query = params.compact.join('&')
       url = "#{status_url}?#{query}"
       response = get(url)
+
+      raise "wtf #{url}? #{response.code}" unless response.code == 200
 
       statuses = []
       parse_status_html(response) do |status|
@@ -142,7 +172,6 @@ class NagiosHarder
       rows.each do |row|
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
-          #require 'ruby-debug'; breakpoint
 
           host = columns[0].inner_text.gsub(/\n/, '')
 
