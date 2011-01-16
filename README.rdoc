@@ -18,6 +18,12 @@ Scrape and meander Nagios installs from ruby.
   # schedule a flexible 20 minutes of downtime between now and 2 hours from now
   site.schedule_downtime('myhost', :type => :flexible, :start_time => Time.now, :end_time => Time.now + 2.hours, :hours => 0, :minutes => 20)
 
+  # acknowledge a down service
+  site.acknowledge_service('myhost', 'myservice', 'something bad happened')
+
+  # or unacknowledge
+  site.unacknowledge_service('myhost', 'myservice')
+
 To be continue?
 
 == Note on Patches/Pull Requests

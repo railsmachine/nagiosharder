@@ -25,6 +25,34 @@ class NagiosHarder
       basic_auth(@user, @password) if @user && @password
     end
 
+    def acknowledge_service(host, service, comment)
+      # extra options: sticky_arg, send_notification, persistent
+      
+      request = {
+        :cmd_typ => 34,
+        :cmd_mod => 2,
+        :com_author => @user,
+        :com_data => comment,
+        :host => host,
+        :service => service
+      }
+
+      response = post(cmd_url, :body => request)
+      response.code == 200 && response.body =~ /successful/
+    end
+
+    def unacknowledge_service(host, service)
+      request = {
+        :cmd_typ => 52,
+        :cmd_mod => 2,
+        :host => host,
+        :service => service
+      }
+      
+      response = post(cmd_url, :body => request)
+      response.code == 200 && response.body =~ /successful/
+    end
+
     def schedule_downtime(host, options = {})
       request = {
         :cmd_mod => 2,
@@ -162,8 +190,6 @@ class NagiosHarder
       services
     end
 
-    private
-
     def status_url
       "#{nagios_url}/status.cgi"
     end
@@ -171,6 +197,9 @@ class NagiosHarder
     def cmd_url
       "#{nagios_url}/cmd.cgi"
     end
+
+    private
+
 
     def formatted_time_for(time)
       if @version.to_i < 3
