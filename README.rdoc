@@ -10,7 +10,10 @@ Scrape and meander Nagios installs from ruby.
   puts site.host_status('myhost')
 
   # schedule a host to have services checks run again right now
-  site.schedule_service_check('myhost')
+  site.schedule_host_check('myhost')
+
+  # schedule a host to have services checks run again right now
+  site.schedule_service_check('myhost', 'myservice')
 
   # schedule 20 minutes of downtime, starting now
   site.schedule_host_downtime('myhost', :start_time => Time.now, :end_time => Time.now + 20.minutes)

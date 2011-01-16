@@ -99,12 +99,24 @@ class NagiosHarder
     #  response.code == 200 && response.body =~ /successful/
     #end
     
-    def schedule_service_check(host)
+    def schedule_host_check(host)
       response = post(cmd_url, :body => {
-                                          :start_time => Time.now,
+                                          :start_time => formatted_time_for(Time.now),
                                           :host => host,
                                           :force_check => true,
-                                          :cmd_typ => 92,
+                                          :cmd_typ => 96,
+                                          :cmd_mod => 2
+                                        })
+      response.code == 200 && response.body =~ /successful/
+    end
+
+    def schedule_service_check(host, service)
+      response = post(cmd_url, :body => {
+                                          :start_time => formatted_time_for(Time.now),
+                                          :host => host,
+                                          :service => service,
+                                          :force_check => true,
+                                          :cmd_typ => 7,
                                           :cmd_mod => 2
                                         })
       response.code == 200 && response.body =~ /successful/
