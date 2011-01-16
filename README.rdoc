@@ -13,10 +13,10 @@ Scrape and meander Nagios installs from ruby.
   site.schedule_service_check('myhost')
 
   # schedule 20 minutes of downtime, starting now
-  site.schedule_downtime('myhost', :start_time => Time.now, :end_time => Time.now + 20.minutes)
+  site.schedule_host_downtime('myhost', :start_time => Time.now, :end_time => Time.now + 20.minutes)
 
   # schedule a flexible 20 minutes of downtime between now and 2 hours from now
-  site.schedule_downtime('myhost', :type => :flexible, :start_time => Time.now, :end_time => Time.now + 2.hours, :hours => 0, :minutes => 20)
+  site.schedule_host_downtime('myhost', :type => :flexible, :start_time => Time.now, :end_time => Time.now + 2.hours, :hours => 0, :minutes => 20)
 
   # acknowledge a down service
   site.acknowledge_service('myhost', 'myservice', 'something bad happened')

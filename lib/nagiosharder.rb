@@ -53,7 +53,7 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
-    def schedule_downtime(host, options = {})
+    def schedule_host_downtime(host, options = {})
       request = {
         :cmd_mod => 2,
         :cmd_typ => 55,
