@@ -33,21 +33,35 @@ class NagiosHarder
       "#{nagios_url}/cmd.cgi"
     end
 
-    def schedule_downtime(host)
+    def schedule_downtime(host, options = {})
       request = {
-                  :cmd_typ => 55,
-                  :cmd_mod => 2,
-                  :host => host, # host name
-                  :com_author => 'nagiosharder', # author
-                  :com_data => 'maintenance', # comment
-                  :trigger => '0', # n/a
-                  :start_time => formatted_time_for(Time.now),
-                  :end_time => formatted_time_for(Time.now + 7200),
-                  :fixed => '1', # 1 for true or 0 for false
-                  :hours => '2', # if flexible
-                  :minutes => '0' # if flexible
-                }
+        :cmd_mod => 2,
+        :cmd_typ => 55,
+        :com_author => options[:author] || "#{@user} via nagiosharder",
+        :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
+        :host => host,
+        :childoptions => 0,
+        :trigger => 0
+      }
+
+      # FIXME we could use some option checking...
+
+      request[:type] = case options[:type].to_sym
+                       when :fixed then 1
+                       when :flexible then 0
+                       else 1 # default to fixed
+                       end
+
+      if request[:type] == 0
+        request[:hours]   = options[:hours]
+        request[:minutes] = options[:minutes]
+      end
+
+      request[:start_time] = formatted_time_for(options[:start_time])
+      request[:end_time]   = formatted_time_for(options[:end_time])
+
       response = post(cmd_url, :body => request)
+
       response.code == 200 && response.body =~ /successful/
     end
     

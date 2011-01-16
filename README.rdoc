@@ -6,10 +6,17 @@ Scrape and meander Nagios installs from ruby.
   site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version')
   # version defaults to 3
   
+  # get details back about a host's services
   puts site.host_status('myhost')
+
+  # schedule a host to have services checks run again right now
   site.schedule_service_check('myhost')
 
-  site.schedule_downtime('myhost') # schedules 2 hours of downtime
+  # schedule 20 minutes of downtime, starting now
+  site.schedule_downtime('myhost', :start_time => Time.now, :end_time => Time.now + 20.minutes)
+
+  # schedule a flexible 20 minutes of downtime between now and 2 hours from now
+  site.schedule_downtime('myhost', :type => :flexible, :start_time => Time.now, :end_time => Time.now + 2.hours, :hours => 0, :minutes => 20)
 
 To be continue?
 
