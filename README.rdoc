@@ -8,6 +8,7 @@ Scrape and meander Nagios installs from ruby.
   
   puts site.host_status('myhost')
   site.schedule_service_check('myhost')
+
   site.schedule_downtime('myhost') # schedules 2 hours of downtime
 
 To be continue?
