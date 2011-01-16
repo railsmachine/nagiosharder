@@ -25,14 +25,6 @@ class NagiosHarder
       basic_auth(@user, @password) if @user && @password
     end
 
-    def status_url
-      "#{nagios_url}/status.cgi"
-    end
-
-    def cmd_url
-      "#{nagios_url}/cmd.cgi"
-    end
-
     def schedule_downtime(host, options = {})
       request = {
         :cmd_mod => 2,
@@ -171,6 +163,14 @@ class NagiosHarder
     end
 
     private
+
+    def status_url
+      "#{nagios_url}/status.cgi"
+    end
+
+    def cmd_url
+      "#{nagios_url}/cmd.cgi"
+    end
 
     def formatted_time_for(time)
       if @version.to_i < 3
