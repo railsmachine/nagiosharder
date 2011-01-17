@@ -5,11 +5,11 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "nagiosharder"
-    gem.version = "0.1.0.pre2"
+    gem.version = "0.1.0"
     gem.summary = %Q{Nagios access at your ruby fingertips}
     gem.description = %Q{Nagios access at your ruby fingertips}
     gem.email = "josh@technicalpickles.com"
-    gem.homepage = "http://github.com/technicalpickles/nagiosharder"
+    gem.homepage = "http://github.com/railsmachine/nagiosharder"
     gem.authors = ["Joshua Nichols"]
     gem.add_dependency 'rest-client', '~> 1.6.1'
     gem.add_dependency 'nokogiri', '~> 1.4.3'
