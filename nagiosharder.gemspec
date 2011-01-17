@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{nagiosharder}
-  s.version = "0.1.0.pre2"
+  s.version = "0.1.0"
 
-  s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Joshua Nichols"]
-  s.date = %q{2011-01-14}
+  s.date = %q{2011-01-17}
   s.description = %q{Nagios access at your ruby fingertips}
   s.email = %q{josh@technicalpickles.com}
   s.extra_rdoc_files = [
@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
     "spec/spec.opts",
     "spec/spec_helper.rb"
   ]
-  s.homepage = %q{http://github.com/technicalpickles/nagiosharder}
+  s.homepage = %q{http://github.com/railsmachine/nagiosharder}
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
   s.summary = %q{Nagios access at your ruby fingertips}
