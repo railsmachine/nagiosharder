@@ -12,6 +12,18 @@ Query and command a Nagios install using the power of ruby.
   # schedule a host to have services checks run again right now
   site.schedule_host_check('myhost')
 
+  # get details on all services
+  site.service_status(:all)
+  # or just services that have problems 
+  site.service_status(:all_problems)
+  # (other valid symbols: :ok, :warning, :unknown, :critical, :pending, :all_problems)
+  # or make it sorted by  duration, descending
+  site.service_status(:all_problem, :sort_option => :duration, :sort_type => :desc
+  # (other sort_options: :host, :service, :status, :last_check, :duration, :attempts)
+  # (other sort_types: :asc, :desc)
+  # or get the details for a single service group
+  site.service_status(:all_problem, :group => "AWESOME")
+
   # schedule a host to have services checks run again right now
   site.schedule_service_check('myhost', 'myservice')
 
@@ -26,6 +38,8 @@ Query and command a Nagios install using the power of ruby.
 
   # or unacknowledge
   site.unacknowledge_service('myhost', 'myservice')
+
+  # 
 
 To be continue?
 

@@ -155,6 +155,8 @@ class NagiosHarder
                       raise "Invalid options[:sort_option]"
                     end
 
+      service_group = options[:group]
+
 
       params = {
         'hoststatustype' => 15,
@@ -166,7 +168,11 @@ class NagiosHarder
       params = if @version == 3
                  [ "servicegroup=all", "style=detail" ]
                else
-                 [ "host=all" ]
+                 if service_group
+                   ["servicegroup=#{service_group}", "style=detail"]
+                 else
+                   ["host=all"]
+                 end
                end
       params += [
                   service_status_type ? "servicestatustypes=#{service_status_type}" : nil,
@@ -176,6 +182,7 @@ class NagiosHarder
                 ]
       query = params.compact.join('&')
       url = "#{status_url}?#{query}"
+        puts url
       response = get(url)
 
       raise "wtf #{url}? #{response.code}" unless response.code == 200
@@ -241,7 +248,6 @@ class NagiosHarder
             host = last_host
           end
 
-          #require 'ruby-debug'; breakpoint
           if columns[1]
             service_links = columns[1].css('td a')
             service = service_links[0].inner_html
