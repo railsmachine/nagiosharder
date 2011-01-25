@@ -5,7 +5,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "nagiosharder"
-    gem.version = "0.1.0"
+    gem.version = "0.1.1"
     gem.summary = %Q{Nagios access at your ruby fingertips}
     gem.description = %Q{Nagios access at your ruby fingertips}
     gem.email = "josh@technicalpickles.com"
@@ -13,7 +13,7 @@ begin
     gem.authors = ["Joshua Nichols"]
     gem.add_dependency 'rest-client', '~> 1.6.1'
     gem.add_dependency 'nokogiri', '~> 1.4.3'
-    gem.add_dependency 'activesupport', '~> 3.0.3'
+    gem.add_dependency 'activesupport'
     gem.add_dependency 'httparty', '~> 0.6.1'
     gem.add_development_dependency "rspec", ">= 1.2.9"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings

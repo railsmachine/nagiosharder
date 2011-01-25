@@ -1,13 +1,19 @@
 require 'restclient'
 require 'nokogiri'
-require 'active_support/core_ext/array'
-require 'active_support/core_ext/numeric/time'
-require 'active_support/core_ext/time/calculations'
-require 'active_support/core_ext/date/calculations'
-require 'active_support/core_ext/date_time/calculations'
-require 'active_support/core_ext/date/acts_like'
-require 'active_support/core_ext/time/acts_like'
-require 'active_support/core_ext/date_time/acts_like'
+require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
+
+# :(
+if ActiveSupport::VERSION::MAJOR > 2
+  require 'active_support/core_ext/array'
+  require 'active_support/core_ext/numeric/time'
+  require 'active_support/core_ext/time/calculations'
+  require 'active_support/core_ext/date/calculations'
+  require 'active_support/core_ext/date_time/calculations'
+  require 'active_support/core_ext/date/acts_like'
+  require 'active_support/core_ext/time/acts_like'
+  require 'active_support/core_ext/date_time/acts_like'
+end
+
 require 'httparty'
 
 class NagiosHarder
