@@ -3,6 +3,7 @@ require 'nokogiri'
 require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
 
 # :(
+require 'active_support/version' # double and triplely ensure ActiveSupport::VERSION is around
 if ActiveSupport::VERSION::MAJOR > 2
   require 'active_support/core_ext/array'
   require 'active_support/core_ext/numeric/time'
