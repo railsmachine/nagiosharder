@@ -188,7 +188,6 @@ class NagiosHarder
                 ]
       query = params.compact.join('&')
       url = "#{status_url}?#{query}"
-        puts url
       response = get(url)
 
       raise "wtf #{url}? #{response.code}" unless response.code == 200
