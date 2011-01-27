@@ -60,6 +60,37 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
+    def schedule_service_downtime(host, service, options = {})
+      request = {
+        :cmd_mod => 2,
+        :cmd_typ => 56,
+        :com_author => options[:author] || "#{@user} via nagiosharder",
+        :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
+        :host => host,
+        :service => service,
+        :trigger => 0
+      }
+
+      request[:fixed] = case options[:type].to_sym
+                        when :fixed then 1
+                        when :flexible then 0
+                        else 1
+                        end
+
+
+     if request[:fixed] == 0
+        request[:hours]   = options[:hours]
+        request[:minutes] = options[:minutes]
+      end
+
+      request[:start_time] = formatted_time_for(options[:start_time])
+      request[:end_time]   = formatted_time_for(options[:end_time])
+
+      response = post(cmd_url, :body => request)
+
+      response.code == 200 && response.body =~ /successful/
+    end
+
     def schedule_host_downtime(host, options = {})
       request = {
         :cmd_mod => 2,
