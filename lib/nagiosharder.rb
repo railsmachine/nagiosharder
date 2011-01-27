@@ -73,13 +73,13 @@ class NagiosHarder
 
       # FIXME we could use some option checking...
 
-      request[:type] = case options[:type].to_sym
-                       when :fixed then 1
-                       when :flexible then 0
-                       else 1 # default to fixed
-                       end
+      request[:fixed] = case options[:type].to_sym
+                        when :fixed then 1
+                        when :flexible then 0
+                        else 1 # default to fixed
+                        end
 
-      if request[:type] == 0
+      if request[:fixed] == 0
         request[:hours]   = options[:hours]
         request[:minutes] = options[:minutes]
       end
