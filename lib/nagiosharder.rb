@@ -293,8 +293,30 @@ class NagiosHarder
 
           if columns[1]
             service_links = columns[1].css('td a')
+            service_link, other_links = service_links[0], service_links[1..-1]
+            if service_links.size > 1
+              comments_link = other_links.detect do |link|
+                link.attribute('href').to_s =~ /#comments$/
+              end
+              comments_url = comments_link.attribute('href').to_s if comments_link
+
+              flapping = other_links.any? do |link|
+                link.css('img').attribute('src').to_s =~ /flapping\.gif/
+              end
+
+              acknowledged = other_links.any? do |link|
+                link.css('img').attribute('src').to_s =~ /ack\.gif/
+              end
+
+              extra_service_notes_link = other_links.detect do |link|
+                link.css('img').any? do |img|
+                  img.attribute('src').to_s =~ /notes\.gif/
+                end
+              end
+              extra_service_notes_url = extra_service_notes_link.attribute('href').to_s if extra_service_notes_link
+            end
+
             service = service_links[0].inner_html
-            acknowledged = service_links.size == 3 # acknowledged servies have a link to the service, link to comments, and a link to unacknowledge
           end
           
           status = columns[2].inner_html  if columns[2]
@@ -307,7 +329,6 @@ class NagiosHarder
                            match_data[3].to_i.minutes +
                            match_data[4].to_i.seconds
                          ).ago
-
                        end
           attempts = columns[5].inner_html if columns[5]
           status_info = columns[6].inner_html.gsub('&nbsp;', '') if columns[6]
@@ -324,7 +345,10 @@ class NagiosHarder
               :started_at => started_at,
               :extended_info => status_info,
               :acknowledged => acknowledged,
-              :extinfo_url => service_extinfo_url
+              :extinfo_url => service_extinfo_url,
+              :flapping => flapping,
+              :comments_url => comments_url,
+              :extra_service_notes_url => extra_service_notes_url
 
             yield status
           end
