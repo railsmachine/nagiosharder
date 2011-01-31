@@ -263,12 +263,16 @@ class NagiosHarder
     private
 
 
-    def formatted_time_for(time)
+    def nagios_time_format
       if @version.to_i < 3
-        time.strftime("%m-%d-%Y %H:%M:%S")
-      else 
-        time.strftime("%Y-%m-%d %H:%M:%S")
+        "%m-%d-%Y %H:%M:%S"
+      else
+        "%Y-%m-%d %H:%M:%S"
       end
+    end
+
+    def formatted_time_for(time)
+      time.strftime(time_format)
     end
 
     def parse_status_html(response)
@@ -321,7 +325,8 @@ class NagiosHarder
           
           status = columns[2].inner_html  if columns[2]
           last_check = if columns[3]
-                         datetime = DateTime.strptime(columns[3].inner_html, "%m-%d-%Y %H:%M:%S") rescue nil # nyoo
+                         require 'ruby-debug';
+                         DateTime.strptime(columns[3].inner_html, nagios_time_format).to_time rescue breakpoint # nyoo
                        end
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
