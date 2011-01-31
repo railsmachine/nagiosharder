@@ -1,6 +1,8 @@
 require 'restclient'
 require 'nokogiri'
 require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
+require 'cgi'
+require 'hashie'
 
 # :(
 require 'active_support/version' # double and triplely ensure ActiveSupport::VERSION is around
@@ -254,6 +256,10 @@ class NagiosHarder
       "#{nagios_url}/cmd.cgi"
     end
 
+    def extinfo_url
+      "#{nagios_url}/extinfo.cgi"
+    end
+
     private
 
 
@@ -306,19 +312,20 @@ class NagiosHarder
           attempts = columns[5].inner_html if columns[5]
           status_info = columns[6].inner_html.gsub('&nbsp;', '') if columns[6]
 
-          status = {
-            :host => host,
-            :service => service,
-            :status => status,
-            :last_check => last_check,
-            :duration => duration,
-            :attempts => attempts,
-            :started_at => started_at,
-            :extended_info => status_info,
-            :acknowledged => acknowledged
-          }
-
           if host && service && status && last_check && duration && attempts && started_at && status_info
+            service_extinfo_url = "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}"
+
+            status = Hashie::Mash.new :host => host,
+              :service => service,
+              :status => status,
+              :last_check => last_check,
+              :duration => duration,
+              :attempts => attempts,
+              :started_at => started_at,
+              :extended_info => status_info,
+              :acknowledged => acknowledged,
+              :extinfo_url => service_extinfo_url
+
             yield status
           end
         end
@@ -328,4 +335,5 @@ class NagiosHarder
     end
     
   end
+
 end
