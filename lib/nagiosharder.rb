@@ -320,8 +320,8 @@ class NagiosHarder
           end
           
           status = columns[2].inner_html  if columns[2]
-          last_check = columns[3].inner_html if columns[3]
-          duration = columns[4].inner_html if columns[4]
+          last_check = DateTime.strptime(columns[3].inner_html, "%m-%d-%Y %H:%M:%S").to_time if columns[3]
+          duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
                          (
                            match_data[1].to_i.days +
