@@ -325,8 +325,7 @@ class NagiosHarder
           
           status = columns[2].inner_html  if columns[2]
           last_check = if columns[3]
-                         require 'ruby-debug';
-                         DateTime.strptime(columns[3].inner_html, nagios_time_format).to_time rescue breakpoint # nyoo
+                         DateTime.strptime(columns[3].inner_html, nagios_time_format).to_time
                        end
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
