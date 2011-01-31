@@ -337,8 +337,10 @@ class NagiosHarder
 
           if host && service && status && last_check && duration && attempts && started_at && status_info
             service_extinfo_url = "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}"
+            host_extinfo_url = "#{extinfo_url}?type=1&host=#{host}"
 
             status = Hashie::Mash.new :host => host,
+              :host_extinfo_url => host_extinfo_url,
               :service => service,
               :status => status,
               :last_check => last_check,
@@ -347,7 +349,7 @@ class NagiosHarder
               :started_at => started_at,
               :extended_info => status_info,
               :acknowledged => acknowledged,
-              :extinfo_url => service_extinfo_url,
+              :service_extinfo_url => service_extinfo_url,
               :flapping => flapping,
               :comments_url => comments_url,
               :extra_service_notes_url => extra_service_notes_url
