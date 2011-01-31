@@ -272,7 +272,7 @@ class NagiosHarder
     end
 
     def formatted_time_for(time)
-      time.strftime(time_format)
+      time.strftime(nagios_time_format)
     end
 
     def parse_status_html(response)
