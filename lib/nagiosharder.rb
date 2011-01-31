@@ -320,7 +320,9 @@ class NagiosHarder
           end
           
           status = columns[2].inner_html  if columns[2]
-          last_check = DateTime.strptime(columns[3].inner_html, "%m-%d-%Y %H:%M:%S").to_time if columns[3]
+          last_check = if columns[3]
+                         datetime = DateTime.strptime(columns[3].inner_html, "%m-%d-%Y %H:%M:%S") rescue nil # nyoo
+                       end
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
                          (
