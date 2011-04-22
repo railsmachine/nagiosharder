@@ -323,7 +323,9 @@ class NagiosHarder
           end
           
           status = columns[2].inner_html  if columns[2]
-          last_check = if columns[3]
+          last_check = if columns[3] && columns[3].inner_html != 'N/A'
+                         last_check_str = columns[3].inner_html
+
                          DateTime.strptime(columns[3].inner_html, nagios_time_format).to_time
                        end
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
