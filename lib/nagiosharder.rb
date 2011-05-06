@@ -21,7 +21,7 @@ require 'httparty'
 
 class NagiosHarder
   class Site
-    attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version
+    attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
     def initialize(nagios_url, user, password, version = 3)
@@ -32,6 +32,12 @@ class NagiosHarder
       @default_cookies = {}
       @version = version
       basic_auth(@user, @password) if @user && @password
+
+      @nagios_time_format = if @version.to_i < 3
+                              "%m-%d-%Y %H:%M:%S"
+                            else
+                              "%Y-%m-%d %H:%M:%S"
+                            end
     end
 
     def acknowledge_service(host, service, comment)
@@ -260,15 +266,6 @@ class NagiosHarder
     end
 
     private
-
-
-    def nagios_time_format
-      if @version.to_i < 3
-        "%m-%d-%Y %H:%M:%S"
-      else
-        "%Y-%m-%d %H:%M:%S"
-      end
-    end
 
     def formatted_time_for(time)
       time.strftime(nagios_time_format)
