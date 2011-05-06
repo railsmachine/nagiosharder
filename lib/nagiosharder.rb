@@ -249,10 +249,55 @@ class NagiosHarder
       parse_status_html(response) do |status|
         services[status[:service]] = status
       end
-
+    
       services
     end
 
+    def disable_service_notifications(host, service, options = {})
+      request = {
+        :cmd_mod => 2,
+        :cmd_typ => 23,
+        :host => host,
+        :service => service,
+      }
+
+      response = post(cmd_url, :body => request)
+      if response.code == 200 && response.body =~ /successful/
+        # TODO enable waiting. seems to hang intermittently
+        #if options[:wait]
+        #  sleep(3) until service_notifications_disabled?(host, service)
+        #end
+        true
+      else
+        false
+      end
+    end
+
+    def enable_service_notifications(host, service, options = {})
+      request = {
+        :cmd_mod => 2,
+        :cmd_typ => 22,
+        :host => host,
+        :service => service,
+      }
+
+      response = post(cmd_url, :body => request)
+      if response.code == 200 && response.body =~ /successful/
+        # TODO enable waiting. seems to hang intermittently
+        #if options[:wait]
+        #  sleep(3) while service_notifications_disabled?(host, service)
+        #end
+        true
+      else
+        false
+      end
+    end
+    
+    def service_notifications_disabled?(host, service)
+      self.host_status(host)[service].notifications_disabled
+    end
+    
+    
     def status_url
       "#{nagios_url}/status.cgi"
     end
@@ -279,7 +324,7 @@ class NagiosHarder
       rows.each do |row|
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
-
+          
           host = columns[0].inner_text.gsub(/\n/, '')
 
           # for a given host, the host details are blank after the first row
@@ -306,6 +351,9 @@ class NagiosHarder
 
               acknowledged = other_links.any? do |link|
                 link.css('img').attribute('src').to_s =~ /ack\.gif/
+              end
+              notifications_disabled = other_links.any? do |link|
+                link.css('img').attribute('src').to_s =~ /ndisabled\.gif/
               end
 
               extra_service_notes_link = other_links.detect do |link|
@@ -354,7 +402,8 @@ class NagiosHarder
               :service_extinfo_url => service_extinfo_url,
               :flapping => flapping,
               :comments_url => comments_url,
-              :extra_service_notes_url => extra_service_notes_url
+              :extra_service_notes_url => extra_service_notes_url,
+              :notifications_disabled => notifications_disabled
 
             yield status
           end
@@ -363,7 +412,7 @@ class NagiosHarder
 
       nil
     end
-    
+     
   end
 
 end

@@ -39,7 +39,20 @@ Query and command a Nagios install using the power of ruby.
   # or unacknowledge
   site.unacknowledge_service('myhost', 'myservice')
 
-  # 
+  # disable notifications for a service:
+  site.disable_service_notifications('myhost', 'myservice')
+
+  # check if notifications are disabled:
+  site.service_notifications_disabled?('myhost', 'myservice')
+
+  # enable notifications for a service:
+  site.enable_service_notifications('myhost', 'myservice')
+
+  # disable notifications, and wait for nagios to process it:
+  site.disable_service_notifications('myhost', 'myservice')
+  until site.service_notifications_disabled?('myhost', 'myservice')
+    sleep 3
+  end
 
 To be continue?
 
