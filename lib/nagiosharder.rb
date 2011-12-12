@@ -317,7 +317,7 @@ class NagiosHarder
     end
 
     def parse_status_html(response)
-      doc = Nokogiri::HTML(response)
+      doc = Nokogiri::HTML(response.to_s)
       rows = doc.css('table.status > tr')
 
       last_host = nil
@@ -371,7 +371,7 @@ class NagiosHarder
           last_check = if columns[3] && columns[3].inner_html != 'N/A'
                          last_check_str = columns[3].inner_html
 
-                         DateTime.strptime(columns[3].inner_html, nagios_time_format).to_time
+                         DateTime.strptime(columns[3].inner_html, nagios_time_format).to_s
                        end
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
