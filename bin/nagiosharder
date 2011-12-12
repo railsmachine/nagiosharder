@@ -38,7 +38,12 @@ optparse = OptionParser.new do |opts|
 
 end
 
-optparse.parse!
+begin
+  optparse.parse!
+rescue OptionParser::InvalidOption => e
+  puts e.message
+  exit 1
+end
 
 unless options['nagios_url'] && options['user'] && options['password']
   puts "user, password, and nagios_url required"
