@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+
+require 'nagiosharder'
+require 'terminal-table'
+require 'optparse'
+
+options = {
+  'version'     => 3
+}
+
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: nagiosharder [options] [command]"
+
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+
+  opts.on( '-c', '--config /path/to/file', 'YAML config file') do |file|
+    options.merge!(YAML.load(IO.read(file)))
+  end
+
+  opts.on( '-u', '--user USER', 'Nagios user') do |user|
+    options['user'] = user
+  end
+
+  opts.on( '-p', '--password PASSWORD', 'Nagios password') do |password|
+    options['password'] = password
+  end
+
+  opts.on( '-n', '--nagios_url URL', 'Nagios cgi url') do |nagios_url|
+    options['nagios_url'] = nagios_url
+  end
+
+  opts.on( '-v', '--version 3', 'Nagios version (2 or 3, defaults to 3)') do |nagios_url|
+    options['version'] = nagios_url
+  end
+
+end
+
+optparse.parse!
+
+raise ArgumentError, "user, password, and nagios_url required" unless options['nagios_url'] && options['user'] && options['password']
+
+site = NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
+
+
+def wrap_text(txt, col = 80)
+  txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
+    "\\1\\3\n")
+end
+
+case ARGV[0]
+when 'status'
+  host, filter_service = ARGV[1].split("/")
+  table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
+    site.host_status(host).each do |service|
+      if filter_service
+        next unless service.first == filter_service
+      end
+      details = service.last
+      details['status'] << "/ACK" if details['acknowledged']
+      details['status'] << "/MUTE" if details['notifications_disabled']
+      details['status'] << "/COMMENT" if details['comments_url']
+      t << [
+        host+"/"+service.first,
+        details['status'],
+        wrap_text(details['extended_info'], 40)
+      ]
+    end
+  end
+  table.align_column(1, :right)
+  puts table
+when /^ack/
+  host, service = ARGV[1].split("/")
+  site.acknowledge_service(host, service, ARGV[2])
+when /^unack/
+  host, service = ARGV[1].split("/")
+  site.unacknowledge_service(host, service)
+when /^(mute|disable_notifications)$/
+  host, service = ARGV[1].split("/")
+  site.disable_service_notifications(host, service, ARGV[2])
+when /^(unmute|enable_notifications)$/
+  host, service = ARGV[1].split("/")
+  site.enable_service_notifications(host, service, ARGV[2])
+when 'check'
+  host, service = ARGV[1].split("/")
+  if service
+    site.schedule_service_check(host, service)
+  else
+    site.schedule_host_check(host)
+  end
+when 'downtime'
+  host, service = ARGV[1].split("/")
+  if service
+    puts site.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
+  else
+    puts site.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
+  end
+else
+  help = <<-HELP
+
+NagiosHarder
+
+USAGE:
+
+First, you'll need to connect to nagios. Get help on that with:
+
+    nagiosharder --help
+
+COMMANDS:
+
+    nagiosharder help
+
+    nagiosharder status aux1
+    nagiosharder status aux1/http
+
+    nagiosharder acknowledge aux1/http [message]
+    nagiosharder ack aux1/http [message]
+
+    nagiosharder unacknowledge aux1/http
+    nagiosharder unack aux1/http
+
+    nagiosharder mute aux1/http
+    nagiosharder disable_notifications aux1/http
+
+    nagiosharder unmute aux1/http
+    nagiosharder enable_notifications aux1/http
+
+    nagios check aux1/http
+
+    nagiosharder downtime aux1 15
+    nagiosharder downtime aux1/http 15
+
+HELP
+  puts help
+end
