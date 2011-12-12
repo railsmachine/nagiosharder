@@ -40,10 +40,12 @@ end
 
 optparse.parse!
 
-raise ArgumentError, "user, password, and nagios_url required" unless options['nagios_url'] && options['user'] && options['password']
+unless options['nagios_url'] && options['user'] && options['password']
+  puts "user, password, and nagios_url required"
+  exit 1
+end
 
 site = NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
-
 
 def wrap_text(txt, col = 80)
   txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
@@ -135,3 +137,4 @@ COMMANDS:
 HELP
   puts help
 end
+exit 0
