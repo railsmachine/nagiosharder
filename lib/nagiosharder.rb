@@ -42,14 +42,16 @@ class NagiosHarder
 
     def acknowledge_service(host, service, comment)
       # extra options: sticky_arg, send_notification, persistent
-      
+
       request = {
         :cmd_typ => 34,
         :cmd_mod => 2,
         :com_author => @user,
         :com_data => comment,
         :host => host,
-        :service => service
+        :service => service,
+        :send_notification => true,
+        :persistent => true
       }
 
       response = post(cmd_url, :body => request)
@@ -63,7 +65,7 @@ class NagiosHarder
         :host => host,
         :service => service
       }
-      
+
       response = post(cmd_url, :body => request)
       response.code == 200 && response.body =~ /successful/
     end
@@ -130,7 +132,7 @@ class NagiosHarder
 
       response.code == 200 && response.body =~ /successful/
     end
-    
+
     def cancel_downtime(downtime_id, downtime_type = :host_downtime)
       downtime_types = {
         :host_downtime => 78,
@@ -143,7 +145,7 @@ class NagiosHarder
                                         })
       response.code == 200 && response.body =~ /successful/
     end
-    
+
     def schedule_host_check(host)
       response = post(cmd_url, :body => {
                                           :start_time => formatted_time_for(Time.now),
@@ -249,7 +251,7 @@ class NagiosHarder
       parse_status_html(response) do |status|
         services[status[:service]] = status
       end
-    
+
       services
     end
 
@@ -292,12 +294,12 @@ class NagiosHarder
         false
       end
     end
-    
+
     def service_notifications_disabled?(host, service)
       self.host_status(host)[service].notifications_disabled
     end
-    
-    
+
+
     def status_url
       "#{nagios_url}/status.cgi"
     end
@@ -324,7 +326,7 @@ class NagiosHarder
       rows.each do |row|
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
-          
+
           host = columns[0].inner_text.gsub(/\n/, '')
 
           # for a given host, the host details are blank after the first row
@@ -366,7 +368,7 @@ class NagiosHarder
 
             service = service_links[0].inner_html
           end
-          
+
           status = columns[2].inner_html  if columns[2]
           last_check = if columns[3] && columns[3].inner_html != 'N/A'
                          last_check_str = columns[3].inner_html
@@ -412,7 +414,7 @@ class NagiosHarder
 
       nil
     end
-     
+
   end
 
 end
