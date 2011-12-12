@@ -19,3 +19,7 @@ rdoc
 pkg
 
 ## PROJECT::SPECIFIC
+nagiosharder*.gem
+.bundle
+Gemfile.lock
+vendor/gems
