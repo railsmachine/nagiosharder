@@ -213,7 +213,7 @@ class NagiosHarder
 
 
       params = if @version == 3
-                 [ "servicegroup=all", "style=detail" ]
+                 ["servicegroup=#{service_group||'all'}", "style=detail"]
                else
                  if service_group
                    ["servicegroup=#{service_group}", "style=detail"]
