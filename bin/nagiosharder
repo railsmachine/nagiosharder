@@ -104,6 +104,25 @@ when 'downtime'
   else
     puts site.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
   end
+when 'problems'
+  table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
+    if group = ARGV[1]
+      site.service_status(:all_problems, :group => group)
+    else
+      site.service_status(:all_problems)
+    end.each do |service|
+      service['status'] << "/ACK" if service['acknowledged']
+      service['status'] << "/MUTE" if service['notifications_disabled']
+      service['status'] << "/COMMENT" if service['comments_url']
+      t << [
+        service['host']+"/"+service["service"],
+        service['status'],
+        wrap_text(service['extended_info'], 40)
+      ]
+    end
+  end
+  table.align_column(1, :right)
+  puts table
 else
   help = <<-HELP
 
@@ -138,6 +157,9 @@ COMMANDS:
 
     nagiosharder downtime aux1 15
     nagiosharder downtime aux1/http 15
+
+    nagiosharder problems
+    nagiosharder problems http-services
 
 HELP
   puts help
