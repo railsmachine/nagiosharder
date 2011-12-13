@@ -100,9 +100,9 @@ when 'check'
 when 'downtime'
   host, service = ARGV[1].split("/")
   if service
-    puts site.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
+    site.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
   else
-    puts site.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
+    site.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + ARGV[2].to_i.minutes)
   end
 when 'problems'
   table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
