@@ -70,7 +70,7 @@ when 'status'
   end
 when /^ack/
   host, service = ARGV[1].split("/")
-  site.acknowledge_service(host, service, ARGV[2])
+  site.acknowledge_service(host, service, ARGV[2..-1].join(' '))
 when /^unack/
   host, service = ARGV[1].split("/")
   site.unacknowledge_service(host, service)
