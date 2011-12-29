@@ -206,28 +206,27 @@ class NagiosHarder
 
 
       params = {
-        'hoststatustype' => 15,
-        'servicestatustype' => service_status_type,
-        'host' => 'all'
+        'hoststatustype' => options[:hoststatustype] || 15,
+        'servicestatustypes' => options[:servicestatustypes] || service_status_type,
+        'sorttype' => options[:sorttype] || sort_type,
+        'sortoption' => options[:sortoption] || sort_option,
+        'hoststatustypes' => options[:hoststatustypes],
+        'serviceprops' => options[:serviceprops]
       }
 
+      if @version == 3
+        params['servicegroup'] = service_group || 'all'
+        params['style'] = 'detail'
+      else
+        if service_group
+          params['servicegroup'] = service_group
+          params['style'] = 'detail'
+        else
+          params['host'] = 'all'
+        end
+      end
 
-      params = if @version == 3
-                 ["servicegroup=#{service_group||'all'}", "style=detail"]
-               else
-                 if service_group
-                   ["servicegroup=#{service_group}", "style=detail"]
-                 else
-                   ["host=all"]
-                 end
-               end
-      params += [
-                  service_status_type ? "servicestatustypes=#{service_status_type}" : nil,
-                  sort_type ? "sorttype=#{sort_type}" : nil,
-                  sort_option ? "sortoption=#{sort_option}" : nil,
-                  "hoststatustypes=15"
-                ]
-      query = params.compact.join('&')
+      query = params.reject { |k,v| v == nil }.map { |a| k,v=a;"#{k}=#{v}"}.join('&')
       url = "#{status_url}?#{query}"
       response = get(url)
 
