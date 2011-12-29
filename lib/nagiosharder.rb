@@ -257,10 +257,16 @@ class NagiosHarder
     def disable_service_notifications(host, service, options = {})
       request = {
         :cmd_mod => 2,
-        :cmd_typ => 23,
-        :host => host,
-        :service => service,
+        :host => host
       }
+
+      if service
+        request[:cmd_typ] = 23
+        request[:service] = service
+      else
+        request[:cmd_typ] = 29
+        request[:ahas] = true
+      end
 
       response = post(cmd_url, :body => request)
       if response.code == 200 && response.body =~ /successful/
@@ -277,10 +283,16 @@ class NagiosHarder
     def enable_service_notifications(host, service, options = {})
       request = {
         :cmd_mod => 2,
-        :cmd_typ => 22,
-        :host => host,
-        :service => service,
+        :host => host
       }
+
+      if service
+        request[:cmd_typ] = 22
+        request[:service] = service
+      else
+        request[:cmd_typ] = 28
+        request[:ahas] = true
+      end
 
       response = post(cmd_url, :body => request)
       if response.code == 200 && response.body =~ /successful/
