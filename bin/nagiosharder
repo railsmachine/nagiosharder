@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'nagiosharder'
-require 'terminal-table'
+require 'nagiosharder/cli'
 require 'optparse'
 
 options = {
@@ -59,25 +59,15 @@ end
 
 case ARGV[0]
 when 'status'
-  host, filter_service = ARGV[1].split("/")
-  table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
+  NagiosHarder::Cli.service_table do |t|
+    host, filter_service = ARGV[1].split("/")
     site.host_status(host).each do |service|
       if filter_service
         next unless service.first == filter_service
       end
-      details = service.last
-      details['status'] << "/ACK" if details['acknowledged']
-      details['status'] << "/MUTE" if details['notifications_disabled']
-      details['status'] << "/COMMENT" if details['comments_url']
-      t << [
-        host+"/"+service.first,
-        details['status'],
-        wrap_text(details['extended_info'], 40)
-      ]
+      t << NagiosHarder::Cli.service_row(service.last)
     end
   end
-  table.align_column(1, :right)
-  puts table
 when /^ack/
   host, service = ARGV[1].split("/")
   site.acknowledge_service(host, service, ARGV[2])
