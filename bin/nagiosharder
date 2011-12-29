@@ -138,9 +138,11 @@ COMMANDS:
     nagiosharder unacknowledge aux1/http
     nagiosharder unack aux1/http
 
+    nagiosharder mute aux1
     nagiosharder mute aux1/http
     nagiosharder disable_notifications aux1/http
 
+    nagiosharder unmute aux1
     nagiosharder unmute aux1/http
     nagiosharder enable_notifications aux1/http
 
