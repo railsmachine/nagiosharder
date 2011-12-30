@@ -51,7 +51,8 @@ class NagiosHarder
         :host => host,
         :service => service,
         :send_notification => true,
-        :persistent => true
+        :persistent => false,
+        :sticky_ack => true
       }
 
       response = post(cmd_url, :body => request)
