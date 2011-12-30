@@ -62,7 +62,12 @@ class NagiosHarder
       else
         raise ArgumentError, help
       end
-      return_value == true ? 0 : 1
+      if return_value
+        0
+      else
+        puts "Sorry, bro, nagios didn't like that."
+        1
+      end
     end
 
     protected
