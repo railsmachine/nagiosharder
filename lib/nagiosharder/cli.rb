@@ -5,14 +5,13 @@ require 'nagiosharder'
 class NagiosHarder
   class Cli
 
-    attr_reader :client, :options, :command, :param, :the_rest, :host, :service
+    attr_reader :options, :command, :param, :the_rest, :host, :service
 
     def initialize(argv)
       @options          = parse_connection_options(argv)
       @command, @param  = argv
       @host, @service   = param.split("/") if param
       @the_rest         = argv[2..-1]
-      @client           = connect
     end
 
     def run
@@ -72,8 +71,8 @@ class NagiosHarder
 
     protected
 
-    def connect
-      NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
+    def client
+      @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
     end
 
     def parse_connection_options(argv)
