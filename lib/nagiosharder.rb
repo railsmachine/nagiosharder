@@ -227,7 +227,7 @@ class NagiosHarder
         end
       end
 
-      query = params.reject { |k,v| v == nil }.map { |a| k,v=a;"#{k}=#{v}"}.join('&')
+      query = params.select {|k,v| v }.map {|k,v| "#{k}=#{v}" }.join('&')
       url = "#{status_url}?#{query}"
       response = get(url)
 
