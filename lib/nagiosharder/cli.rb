@@ -91,7 +91,7 @@ class NagiosHarder
         end
 
         opts.on( '-c', '--config [/path/to/file]', 'YAML config file [optional, but recommended]') do |file|
-          options.merge!(YAML.load(IO.read(file)))
+          options.merge!(YAML.load_file(file))
         end
 
         opts.on( '-u', '--user USER', 'Nagios user') do |user|
