@@ -22,6 +22,7 @@ class NagiosHarder
             service.nil? || service == name
           end.map { |name, s| s }
         end
+        true
       when /^ack/
         client.acknowledge_service(host, service, the_rest.join(' '))
       when /^unack/
@@ -50,6 +51,7 @@ class NagiosHarder
             client.service_status(:all_problems)
           end
         end
+        true
       when /^(triage|unhandled)/
         service_table do
           if param
@@ -58,6 +60,7 @@ class NagiosHarder
             client.service_status(:all_problems, :hoststatustypes => 3, :serviceprops => 42, :servicestatustypes => 28)
           end
         end
+        true
       else
         raise ArgumentError, help
       end
