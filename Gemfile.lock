@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    nagiosharder (0.3.0)
+    nagiosharder (0.4.0)
       activesupport
       hashie (~> 1.0.0)
       httparty (~> 0.6.1)

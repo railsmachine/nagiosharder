@@ -1,6 +1,13 @@
 = nagiosharder
 
-Query and command a Nagios install using the power of ruby.
+Query and command a Nagios install using the power of ruby (and lots of screen-scaping)! Do the usual gem install jig:
+
+  gem install nagiosharder
+
+
+Now you have access to both a Ruby interface and a command line interface.
+
+Here's some examples to get you started with the Ruby API:
 
   require 'nagiosharder'
   site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version')
@@ -54,7 +61,16 @@ Query and command a Nagios install using the power of ruby.
     sleep 3
   end
 
-To be continue?
+Then there's the command line. Start with --help
+
+  nagiosharder --help
+
+This will show you how you configure nagiosharder enough to talk to your nagios. You need at least a username, password, and nagios url. These can alternatively be in a config file. For example:
+
+  nagiosharder --config /path/to/yaml
+
+This will display all available commands.
+
 
 == Note on Patches/Pull Requests
  
