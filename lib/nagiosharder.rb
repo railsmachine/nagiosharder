@@ -397,7 +397,7 @@ class NagiosHarder
                          ).ago
                        end
           attempts = columns[5].inner_html if columns[5]
-          status_info = columns[6].inner_html.gsub('&nbsp;', '') if columns[6]
+          status_info = columns[6].inner_html.gsub('&nbsp;', '').gsub("\302\240", '') if columns[6]
 
           if host && service && status && last_check && duration && attempts && started_at && status_info
             service_extinfo_url = "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}"
