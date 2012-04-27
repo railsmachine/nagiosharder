@@ -75,12 +75,13 @@ class NagiosHarder
     protected
 
     def client
-      @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
+      @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'], options['time'])
     end
 
     def parse_connection_options(argv)
       options = {
-        'version' => 3
+        'version' => 3,
+        'time' => 'us'
       }
 
       optparse = OptionParser.new do |opts|
@@ -108,6 +109,10 @@ class NagiosHarder
 
         opts.on( '-v', '--version [3]', 'Nagios version (2 or 3, defaults to 3)') do |nagios_url|
           options['version'] = nagios_url
+        end
+
+        opts.on( '-t', '--time [us|euro]', 'Nagios time format') do |nagios_url|
+          options['time'] = nagios_url
         end
 
       end
