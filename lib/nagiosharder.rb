@@ -423,3 +423,4 @@ class NagiosHarder
     end
 
   end
+end
