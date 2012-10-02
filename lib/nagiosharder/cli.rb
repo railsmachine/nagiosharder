@@ -184,7 +184,7 @@ COMMANDS:
     nagiosharder unmute aux1/http
     nagiosharder enable_notifications aux1/http
 
-    nagios check aux1/http
+    nagiosharder check aux1/http
 
     nagiosharder downtime aux1 15
     nagiosharder downtime aux1/http 15
