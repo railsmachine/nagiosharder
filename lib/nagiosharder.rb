@@ -3,6 +3,7 @@ require 'nokogiri'
 require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
 require 'cgi'
 require 'hashie'
+require 'nagiosharder/filters'
 
 # :(
 require 'active_support/version' # double and triplely ensure ActiveSupport::VERSION is around
@@ -189,57 +190,42 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
-    def service_status(type, options = {})
-      service_status_type = case type
-                            when :ok then 2
-                            when :warning then 4
-                            when :unknown then 8
-                            when :critical then 16
-                            when :pending then 1
-                            when :all_problems then 28
-                            when :all then nil
-                            else
-                              raise "Unknown type"
-                            end
+    def service_status(options = {})
+      params = {}
 
-      sort_type = case options[:sort_type]
-                  when :asc then 1
-                  when :desc then 2
-                  when nil then nil
-                  else
-                    raise "Invalid options[:sort_type]"
-                  end
+      {
+        :host_status_types    => :notification_host,
+        :service_status_types => :notification_service,
+        :sort_type            => :sort,
+        :sort_option          => :sort,
+        :host_props           => :host,
+        :service_props        => :service,
+      }.each do |key, val|
+        if options[key] && (options[key].is_a?(Array) || options[key].is_a?(Symbol))
+          params[key.to_s.gsub(/_/, '')] = Nagiosharder::Filters.value(val, *options[key])
+        end
+      end
 
-      sort_option = case options[:sort_option]
-                    when :host then 1
-                    when :service then 2
-                    when :status then 3
-                    when :last_check then 4
-                    when :duration then 6
-                    when :attempts then 5
-                    when nil then nil
-                    else
-                      raise "Invalid options[:sort_option]"
-                    end
-
-      service_group = options[:group]
-
-
-      params = {
-        'hoststatustype' => options[:hoststatustype] || 15,
-        'servicestatustypes' => options[:servicestatustypes] || service_status_type,
-        'sorttype' => options[:sorttype] || sort_type,
-        'sortoption' => options[:sortoption] || sort_option,
-        'hoststatustypes' => options[:hoststatustypes],
-        'serviceprops' => options[:serviceprops]
-      }
+      # if any of the standard filter params are already integers, those win
+      %w(
+        :hoststatustypes,
+        :servicestatustypes,
+        :sorttype,
+        :sortoption,
+        :hostprops,
+        :serviceprops,
+      ).each do |key|
+        params[key.to_s] = options[:val] if !options[:val].nil? && options[:val].match(/^\d*$/)
+      end
 
       if @version == 3
-        params['servicegroup'] = service_group || 'all'
+        params['servicegroup'] = options[:group] || 'all'
         params['style'] = 'detail'
+        params['embedded'] = '1'
+        params['noheader'] = '1'
       else
-        if service_group
-          params['servicegroup'] = service_group
+        if options[:group]
+          params['servicegroup'] = options[:group]
           params['style'] = 'detail'
         else
           params['host'] = 'all'
@@ -261,7 +247,7 @@ class NagiosHarder
     end
 
     def host_status(host)
-      host_status_url = "#{status_url}?host=#{host}"
+      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1"
       response =  get(host_status_url)
 
       raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200

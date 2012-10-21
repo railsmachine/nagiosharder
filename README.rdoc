@@ -12,7 +12,7 @@ Here's some examples to get you started with the Ruby API:
   require 'nagiosharder'
   site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version')
   # version defaults to 3
-  
+
   # get details back about a host's services
   puts site.host_status('myhost')
 
@@ -20,16 +20,28 @@ Here's some examples to get you started with the Ruby API:
   site.schedule_host_check('myhost')
 
   # get details on all services
-  site.service_status(:all)
-  # or just services that have problems 
-  site.service_status(:all_problems)
-  # (other valid symbols: :ok, :warning, :unknown, :critical, :pending, :all_problems)
-  # or make it sorted by  duration, descending
-  site.service_status(:all_problem, :sort_option => :duration, :sort_type => :desc
-  # (other sort_options: :host, :service, :status, :last_check, :duration, :attempts)
-  # (other sort_types: :asc, :desc)
+  site.service_status
+
+  # or just things with problems
+  site.service_status(
+    :service_status_types => [
+      :critical,
+      :warning,
+      :unknown
+    ]
+  )
+
+  # or just muted services, sorted desc by duration
+  site.service_status(
+    :service_props => [
+      :notifications_disabled,
+    ],
+    :sort_type    => :descending,
+    :sort_option  => :state_duration,
+  )
+
   # or get the details for a single service group
-  site.service_status(:all_problem, :group => "AWESOME")
+  site.service_status(:group => "AWESOME")
 
   # schedule a host to have services checks run again right now
   site.schedule_service_check('myhost', 'myservice')
@@ -45,6 +57,9 @@ Here's some examples to get you started with the Ruby API:
 
   # or unacknowledge
   site.unacknowledge_service('myhost', 'myservice')
+
+  # acknowledge a down service
+  site.acknowledge_host('myhost', 'something bad happened')
 
   # disable notifications for a service:
   site.disable_service_notifications('myhost', 'myservice')
@@ -73,7 +88,7 @@ This will display all available commands.
 
 
 == Note on Patches/Pull Requests
- 
+
 * Fork the project.
 * Make your feature addition or bug fix.
 * Add tests for it. This is important so I don't break it in a future version unintentionally.
