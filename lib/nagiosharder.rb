@@ -24,7 +24,7 @@ class NagiosHarder
     attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
-    def initialize(nagios_url, user, password, version = 3, nagios_time_format = 'us')
+    def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
       @password = password
@@ -33,7 +33,16 @@ class NagiosHarder
       @version = version
       debug_output if ENV['DEBUG']
       basic_auth(@user, @password) if @user && @password
-      @nagios_time_format = nagios_time_format == 'us' ? "%m-%d-%Y %H:%M:%S" : "%Y-%m-%d %H:%M:%S"
+      @nagios_time_format = if nagios_time_format == 'us'
+         "%Y-%m-%d %H:%M:%S"
+      else
+        if @version.to_i < 3
+          "%m-%d-%Y %H:%M:%S"
+        else
+          "%Y-%m-%d %H:%M:%S"
+        end
+      end
+      self
     end
 
     def acknowledge_service(host, service, comment)
