@@ -102,6 +102,7 @@ class NagiosHarder
             :service_props => [
               :notifications_disabled,
             ]
+          }
           params[:group] = param
           client.service_status(params)
         end
