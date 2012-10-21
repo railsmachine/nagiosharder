@@ -75,6 +75,7 @@ class NagiosHarder
     protected
 
     def client
+      debug "loading client with options #{options.inspect}"
       @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'], options['time'])
     end
 
@@ -157,6 +158,10 @@ class NagiosHarder
     def wrap_text(txt, col = 80)
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
         "\\1\\3\n")
+    end
+
+    def debug(*args)
+      $stderr.puts *args if ENV['DEBUG']
     end
 
     def help

@@ -31,6 +31,7 @@ class NagiosHarder
       @default_options = {}
       @default_cookies = {}
       @version = version
+      debug_output if ENV['DEBUG']
       basic_auth(@user, @password) if @user && @password
       @nagios_time_format = nagios_time_format == 'us' ? "%m-%d-%Y %H:%M:%S" : "%Y-%m-%d %H:%M:%S"
     end
@@ -334,6 +335,7 @@ class NagiosHarder
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
 
+          # Host column
           host = columns[0].inner_text.gsub(/\n/, '')
 
           # for a given host, the host details are blank after the first row
@@ -344,7 +346,9 @@ class NagiosHarder
             # or save it for later
             host = last_host
           end
+          debug 'parsed host column'
 
+          # Service Column
           if columns[1]
             service_links = columns[1].css('td a')
             service_link, other_links = service_links[0], service_links[1..-1]
@@ -375,13 +379,21 @@ class NagiosHarder
 
             service = service_links[0].inner_html
           end
+          debug 'parsed service column'
 
+          # Status
           status = columns[2].inner_html  if columns[2]
+          debug 'parsed status column'
+
+          # Last Check
           last_check = if columns[3] && columns[3].inner_html != 'N/A'
                          last_check_str = columns[3].inner_html
-
+                         debug "Need to parse #{columns[3].inner_html} in #{nagios_time_format}"
                          DateTime.strptime(columns[3].inner_html, nagios_time_format).to_s
                        end
+          debug 'parsed last check column'
+
+          # Duration
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
                          (
@@ -391,8 +403,16 @@ class NagiosHarder
                            match_data[4].to_i.seconds
                          ).ago
                        end
+          debug 'parsed duration column'
+
+          # Attempts
           attempts = columns[5].inner_html if columns[5]
+          debug 'parsed attempts column'
+
+          # Status info
           status_info = columns[6].inner_html.gsub('&nbsp;', '').gsub("\302\240", '') if columns[6]
+          debug 'parsed status info column'
+
 
           if host && service && status && last_check && duration && attempts && started_at && status_info
             service_extinfo_url = "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}"
@@ -420,6 +440,10 @@ class NagiosHarder
       end
 
       nil
+    end
+
+    def debug(*args)
+      $stderr.puts *args if ENV['DEBUG']
     end
 
   end
