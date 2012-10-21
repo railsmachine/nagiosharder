@@ -81,8 +81,7 @@ class NagiosHarder
 
     def parse_connection_options(argv)
       options = {
-        'version' => 3,
-        'time' => 'us'
+        'version' => 3
       }
 
       optparse = OptionParser.new do |opts|
@@ -108,12 +107,12 @@ class NagiosHarder
           options['nagios_url'] = nagios_url
         end
 
-        opts.on( '-v', '--version [3]', 'Nagios version (2 or 3, defaults to 3)') do |nagios_url|
-          options['version'] = nagios_url
+        opts.on( '-v', '--version [3]', 'Nagios version (2 or 3, defaults to 3)') do |version|
+          options['version'] = version
         end
 
-        opts.on( '-t', '--time [us|euro]', 'Nagios time format') do |nagios_url|
-          options['time'] = nagios_url
+        opts.on( '-t', '--time [us|euro]', 'Nagios time format') do |time|
+          options['time'] = time
         end
 
       end
