@@ -46,8 +46,6 @@ class NagiosHarder
     end
 
     def acknowledge_service(host, service, comment)
-      # extra options: sticky_arg, send_notification, persistent
-
       request = {
         :cmd_typ => 34,
         :cmd_mod => 2,
@@ -55,6 +53,22 @@ class NagiosHarder
         :com_data => comment,
         :host => host,
         :service => service,
+        :send_notification => true,
+        :persistent => false,
+        :sticky_ack => true
+      }
+
+      response = post(cmd_url, :body => request)
+      response.code == 200 && response.body =~ /successful/
+    end
+
+    def acknowledge_host(host, comment)
+      request = {
+        :cmd_typ => 33,
+        :cmd_mod => 2,
+        :com_author => @user,
+        :com_data => comment,
+        :host => host,
         :send_notification => true,
         :persistent => false,
         :sticky_ack => true

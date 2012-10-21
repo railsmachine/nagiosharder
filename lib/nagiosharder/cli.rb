@@ -24,7 +24,11 @@ class NagiosHarder
         end
         true
       when /^ack/
-        client.acknowledge_service(host, service, the_rest.join(' '))
+        if service.nil?
+          client.acknowledge_host(host, the_rest.join(' '))
+        else
+          client.acknowledge_service(host, service, the_rest.join(' '))
+        end
       when /^unack/
         client.unacknowledge_service(host, service)
       when /^(mute|disable_notifications)$/
@@ -178,6 +182,8 @@ COMMANDS:
 
     nagiosharder status aux1
     nagiosharder status aux1/http
+
+    nagiosharder acknowledge aux1 [message]
 
     nagiosharder acknowledge aux1/http [message]
     nagiosharder ack aux1/http [message]
