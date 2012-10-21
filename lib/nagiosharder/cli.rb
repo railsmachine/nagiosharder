@@ -23,7 +23,7 @@ class NagiosHarder
           end.map { |name, s| s }
         end
         true
-      when /^ack\s/
+      when /^(ack|acknowledged)$/
         if service.nil?
           client.acknowledge_host(host, the_rest.join(' '))
         else
@@ -124,6 +124,7 @@ class NagiosHarder
         end
         true
       else
+        debug "'#{command}'"
         raise ArgumentError, help
       end
       if return_value
