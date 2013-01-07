@@ -112,6 +112,17 @@ class NagiosHarder
           client.service_status(params)
         end
         true
+      when /^scheduled_downtime/
+        service_table do
+          params = {
+            :service_props => [
+              :scheduled_downtime,
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
+        end
+        true
       when /^(acked|acknowledged)/
         service_table do
           params = {
@@ -213,6 +224,7 @@ class NagiosHarder
     def service_row(service)
       service['status'] << "/ACK" if service['acknowledged']
       service['status'] << "/MUTE" if service['notifications_disabled']
+      service['status'] << "/DOWNTIME" if service['downtime']
       service['status'] << "/COMMENT" if service['comments_url']
       [
         service['host']+"/"+service["service"],

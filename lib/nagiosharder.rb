@@ -374,8 +374,13 @@ class NagiosHarder
               acknowledged = other_links.any? do |link|
                 link.css('img').attribute('src').to_s =~ /ack\.gif/
               end
+
               notifications_disabled = other_links.any? do |link|
                 link.css('img').attribute('src').to_s =~ /ndisabled\.gif/
+              end
+
+              downtime = other_links.any? do |link|
+                link.css('img').attribute('src').to_s =~ /downtime\.gif/
               end
 
               extra_service_notes_link = other_links.detect do |link|
@@ -441,7 +446,8 @@ class NagiosHarder
               :flapping => flapping,
               :comments_url => comments_url,
               :extra_service_notes_url => extra_service_notes_url,
-              :notifications_disabled => notifications_disabled
+              :notifications_disabled => notifications_disabled,
+              :downtime => downtime
 
             yield status
           end
