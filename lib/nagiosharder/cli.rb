@@ -42,10 +42,15 @@ class NagiosHarder
           client.schedule_host_check(host)
         end
       when 'downtime'
-        if service
-          client.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+        if the_rest == []
+          puts "Downtime requires duration in minutes."
+          false
         else
-          client.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          if service
+            client.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          else
+            client.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          end
         end
       when 'problems'
         service_table do
