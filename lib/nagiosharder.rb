@@ -335,6 +335,47 @@ class NagiosHarder
       time.strftime(nagios_time_format)
     end
 
+    def parse_summary_html(response)
+      doc = Nokogiri::HTML(response.to_s)
+      rows = doc.css('table.status > tr')
+
+      rows.each do |row|
+        columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
+        if columns.any?
+
+          # Group column
+          group = columns[0].inner_text.gsub(/\n/, '').match(/\((.*?)\)/)[1]
+        end
+
+        if !group.nil?
+          host_status_url, host_status_counts = parse_summary_column(columns[1]) if columns[1]
+          service_status_url, service_status_counts = parse_summary_column(columns[2]) if columns[2]
+        end
+
+        status = Hashie::Mash.new :group => group,
+          :host_status_url => host_status_url,
+          :host_status_counts => host_status_counts,
+          :service_status_url => service_status_url,
+          :service_status_counts => service_status_counts
+
+        yield status
+      end
+    end
+
+    def parse_summary_column(column)
+      text = column.css('td a')[0]
+      if !text.nil?
+        link = text['href'] || nil
+        counts = {}
+        counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue nil
+        counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue nil
+        counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue nil
+        counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue nil
+        return link, counts
+      end
+      return nil
+    end
+
     def parse_status_html(response)
       doc = Nokogiri::HTML(response.to_s)
       rows = doc.css('table.status > tr')
