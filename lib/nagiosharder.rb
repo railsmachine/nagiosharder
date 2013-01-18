@@ -246,6 +246,34 @@ class NagiosHarder
       statuses
     end
 
+    def hostgroups_summary(options = {})
+      hostgroups_summary_url = "#{status_url}?servicegroup=all&style=summary"
+      response = get(hostgroups_summary)
+
+      raise "wtf #{hostgroups_summary_url}? #{response.code}" unless response.code == 200
+
+      hostgroups = {}
+      parse_summary_html(response) do |status|
+        hostgroups[status[:group]] = status
+      end
+
+     hostgroups 
+    end
+
+    def servicegroups_summary(options = {})
+      servicegroups_summary_url = "#{status_url}?servicegroup=all&style=summary"
+      response = get(servicegroups_summary)
+
+      raise "wtf #{servicegroups_summary_url}? #{response.code}" unless response.code == 200
+
+      servicegroups = {}
+      parse_summary_html(response) do |status|
+        servicegroups[status[:group]] = status
+      end
+
+      servicegroups
+    end
+
     def host_status(host)
       host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1"
       response =  get(host_status_url)
