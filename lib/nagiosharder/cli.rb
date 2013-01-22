@@ -101,6 +101,16 @@ class NagiosHarder
           client.service_status(params)
         end
         true
+      when /^servicegroups/
+        service_table do
+          client.servicegroups_summary()
+        end
+        true
+      when /^hostgroups/
+        service_table do
+          client.hostgroups_summary()
+        end
+        true
       when /^muted/
         service_table do
           params = {
@@ -292,6 +302,9 @@ COMMANDS:
     nagiosharder triage
     nagiosharder unhandled
     nagiosharder unhandled http-services
+
+    nagiosharder hostgroups
+    nagiosharder servicegroups
       HELP
     end
   end
