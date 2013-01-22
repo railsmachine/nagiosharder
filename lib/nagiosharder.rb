@@ -378,15 +378,15 @@ class NagiosHarder
         if !group.nil?
           host_status_url, host_status_counts = parse_summary_column(columns[1]) if columns[1]
           service_status_url, service_status_counts = parse_summary_column(columns[2]) if columns[2]
+
+          status = Hashie::Mash.new :group => group,
+            :host_status_url => host_status_url,
+            :host_status_counts => host_status_counts,
+            :service_status_url => service_status_url,
+            :service_status_counts => service_status_counts
+
+          yield status
         end
-
-        status = Hashie::Mash.new :group => group,
-          :host_status_url => host_status_url,
-          :host_status_counts => host_status_counts,
-          :service_status_url => service_status_url,
-          :service_status_counts => service_status_counts
-
-        yield status
       end
     end
 
