@@ -395,10 +395,10 @@ class NagiosHarder
       if !text.nil?
         link = text['href'] || nil
         counts = {}
-        counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue nil
-        counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue nil
-        counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue nil
-        counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue nil
+        counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue 0
+        counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue 0
+        counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue 0
+        counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
         return link, counts
       end
       return nil
