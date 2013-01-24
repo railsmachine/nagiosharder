@@ -247,7 +247,7 @@ class NagiosHarder
     end
 
     def hostgroups_summary(options = {})
-      hostgroups_summary_url = "#{status_url}?servicegroup=all&style=summary"
+      hostgroups_summary_url = "#{status_url}?hostgroup=all&style=summary"
       response = get(hostgroups_summary_url)
 
       raise "wtf #{hostgroups_summary_url}? #{response.code}" unless response.code == 200
