@@ -376,8 +376,8 @@ class NagiosHarder
         end
 
         if !group.nil?
-          host_status_url, host_status_counts = parse_summary_column(columns[1]) if columns[1]
-          service_status_url, service_status_counts = parse_summary_column(columns[2]) if columns[2]
+          host_status_url, host_status_counts = parse_host_status_summary(columns[1]) if columns[1]
+          service_status_url, service_status_counts = parse_service_status_summary(columns[2]) if columns[2]
 
           status = Hashie::Mash.new :group => group,
             :host_status_url => host_status_url,
@@ -390,18 +390,24 @@ class NagiosHarder
       end
     end
 
-    def parse_summary_column(column)
+    def parse_host_status_summary(column)
       text = column.css('td a')[0]
-      if !text.nil?
-        link = text['href'] || nil
-        counts = {}
-        counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue 0
-        counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue 0
-        counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue 0
-        counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
-        return link, counts
-      end
-      return nil
+      link = text['href'] rescue nil
+      counts = {}
+      counts['up'] = column.inner_text.match(/(\d+)\s(UP)/)[1] rescue 0
+      counts['down'] = column.inner_text.match(/(\d+)\s(DOWN)/)[1] rescue 0
+      return link, counts
+    end
+
+    def parse_service_status_summary(column)
+      text = column.css('td a')[0]
+      link = text['href'] rescue nil
+      counts = {}
+      counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue 0
+      counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue 0
+      counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue 0
+      counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
+      return link, counts
     end
 
     def parse_status_html(response)
