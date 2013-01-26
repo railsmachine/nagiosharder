@@ -101,6 +101,16 @@ class NagiosHarder
           client.service_status(params)
         end
         true
+      when /^servicegroups/
+        groups_table do
+          client.servicegroups_summary()
+        end
+        true
+      when /^hostgroups/
+        groups_table do
+          client.hostgroups_summary()
+        end
+        true
       when /^muted/
         service_table do
           params = {
@@ -209,6 +219,30 @@ class NagiosHarder
       options
     end
 
+    def groups_table
+      table = Terminal::Table.new(:headings => ['Group', 'Host Up', 'Host Down', 'Service Ok', 'Service Warning', 'Service Critical', 'Service Unknown']) do |t|
+        groups = yield
+        groups.each do |name, group|
+          t << group_row(group)
+        end
+        t
+      end
+      table.align_column(1, :right)
+      puts table
+    end
+
+    def group_row(group)
+      [
+        group['group'],
+        group['host_status_counts']['up'],
+        group['host_status_counts']['down'],
+        group['service_status_counts']['ok'],
+        group['service_status_counts']['warning'],
+        group['service_status_counts']['critical'],
+        group['service_status_counts']['unknown']
+      ]
+    end
+
     def service_table
       table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
         services = yield
@@ -292,6 +326,9 @@ COMMANDS:
     nagiosharder triage
     nagiosharder unhandled
     nagiosharder unhandled http-services
+
+    nagiosharder hostgroups
+    nagiosharder servicegroups
       HELP
     end
   end
