@@ -3,6 +3,7 @@ require 'nokogiri'
 require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
 require 'cgi'
 require 'hashie'
+require 'nagiosharder/filters'
 
 # :(
 require 'active_support/version' # double and triplely ensure ActiveSupport::VERSION is around
@@ -24,25 +25,28 @@ class NagiosHarder
     attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
-    def initialize(nagios_url, user, password, version = 3)
+    def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
       @password = password
       @default_options = {}
       @default_cookies = {}
       @version = version
+      debug_output if ENV['DEBUG']
       basic_auth(@user, @password) if @user && @password
-
-      @nagios_time_format = if @version.to_i < 3
-                              "%m-%d-%Y %H:%M:%S"
-                            else
-                              "%Y-%m-%d %H:%M:%S"
-                            end
+      @nagios_time_format = if nagios_time_format == 'us'
+         "%m-%d-%Y %H:%M:%S"
+      else
+        if @version.to_i < 3
+          "%m-%d-%Y %H:%M:%S"
+        else
+          "%Y-%m-%d %H:%M:%S"
+        end
+      end
+      self
     end
 
     def acknowledge_service(host, service, comment)
-      # extra options: sticky_arg, send_notification, persistent
-
       request = {
         :cmd_typ => 34,
         :cmd_mod => 2,
@@ -50,6 +54,22 @@ class NagiosHarder
         :com_data => comment,
         :host => host,
         :service => service,
+        :send_notification => true,
+        :persistent => false,
+        :sticky_ack => true
+      }
+
+      response = post(cmd_url, :body => request)
+      response.code == 200 && response.body =~ /successful/
+    end
+
+    def acknowledge_host(host, comment)
+      request = {
+        :cmd_typ => 33,
+        :cmd_mod => 2,
+        :com_author => @user,
+        :com_data => comment,
+        :host => host,
         :send_notification => true,
         :persistent => false,
         :sticky_ack => true
@@ -170,57 +190,42 @@ class NagiosHarder
       response.code == 200 && response.body =~ /successful/
     end
 
-    def service_status(type, options = {})
-      service_status_type = case type
-                            when :ok then 2
-                            when :warning then 4
-                            when :unknown then 8
-                            when :critical then 16
-                            when :pending then 1
-                            when :all_problems then 28
-                            when :all then nil
-                            else
-                              raise "Unknown type"
-                            end
+    def service_status(options = {})
+      params = {}
 
-      sort_type = case options[:sort_type]
-                  when :asc then 1
-                  when :desc then 2
-                  when nil then nil
-                  else
-                    raise "Invalid options[:sort_type]"
-                  end
+      {
+        :host_status_types    => :notification_host,
+        :service_status_types => :notification_service,
+        :sort_type            => :sort,
+        :sort_option          => :sort,
+        :host_props           => :host,
+        :service_props        => :service,
+      }.each do |key, val|
+        if options[key] && (options[key].is_a?(Array) || options[key].is_a?(Symbol))
+          params[key.to_s.gsub(/_/, '')] = Nagiosharder::Filters.value(val, *options[key])
+        end
+      end
 
-      sort_option = case options[:sort_option]
-                    when :host then 1
-                    when :service then 2
-                    when :status then 3
-                    when :last_check then 4
-                    when :duration then 6
-                    when :attempts then 5
-                    when nil then nil
-                    else
-                      raise "Invalid options[:sort_option]"
-                    end
-
-      service_group = options[:group]
-
-
-      params = {
-        'hoststatustype' => options[:hoststatustype] || 15,
-        'servicestatustypes' => options[:servicestatustypes] || service_status_type,
-        'sorttype' => options[:sorttype] || sort_type,
-        'sortoption' => options[:sortoption] || sort_option,
-        'hoststatustypes' => options[:hoststatustypes],
-        'serviceprops' => options[:serviceprops]
-      }
+      # if any of the standard filter params are already integers, those win
+      %w(
+        :hoststatustypes,
+        :servicestatustypes,
+        :sorttype,
+        :sortoption,
+        :hostprops,
+        :serviceprops,
+      ).each do |key|
+        params[key.to_s] = options[:val] if !options[:val].nil? && options[:val].match(/^\d*$/)
+      end
 
       if @version == 3
-        params['servicegroup'] = service_group || 'all'
+        params['servicegroup'] = options[:group] || 'all'
         params['style'] = 'detail'
+        params['embedded'] = '1'
+        params['noheader'] = '1'
       else
-        if service_group
-          params['servicegroup'] = service_group
+        if options[:group]
+          params['servicegroup'] = options[:group]
           params['style'] = 'detail'
         else
           params['host'] = 'all'
@@ -241,8 +246,36 @@ class NagiosHarder
       statuses
     end
 
+    def hostgroups_summary(options = {})
+      hostgroups_summary_url = "#{status_url}?hostgroup=all&style=summary"
+      response = get(hostgroups_summary_url)
+
+      raise "wtf #{hostgroups_summary_url}? #{response.code}" unless response.code == 200
+
+      hostgroups = {}
+      parse_summary_html(response) do |status|
+        hostgroups[status[:group]] = status
+      end
+
+     hostgroups 
+    end
+
+    def servicegroups_summary(options = {})
+      servicegroups_summary_url = "#{status_url}?servicegroup=all&style=summary"
+      response = get(servicegroups_summary_url)
+
+      raise "wtf #{servicegroups_summary_url}? #{response.code}" unless response.code == 200
+
+      servicegroups = {}
+      parse_summary_html(response) do |status|
+        servicegroups[status[:group]] = status
+      end
+
+      servicegroups
+    end
+
     def host_status(host)
-      host_status_url = "#{status_url}?host=#{host}"
+      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1"
       response =  get(host_status_url)
 
       raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
@@ -330,6 +363,53 @@ class NagiosHarder
       time.strftime(nagios_time_format)
     end
 
+    def parse_summary_html(response)
+      doc = Nokogiri::HTML(response.to_s)
+      rows = doc.css('table.status > tr')
+
+      rows.each do |row|
+        columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
+        if columns.any?
+
+          # Group column
+          group = columns[0].inner_text.gsub(/\n/, '').match(/\((.*?)\)/)[1]
+        end
+
+        if !group.nil?
+          host_status_url, host_status_counts = parse_host_status_summary(columns[1]) if columns[1]
+          service_status_url, service_status_counts = parse_service_status_summary(columns[2]) if columns[2]
+
+          status = Hashie::Mash.new :group => group,
+            :host_status_url => host_status_url,
+            :host_status_counts => host_status_counts,
+            :service_status_url => service_status_url,
+            :service_status_counts => service_status_counts
+
+          yield status
+        end
+      end
+    end
+
+    def parse_host_status_summary(column)
+      text = column.css('td a')[0]
+      link = text['href'] rescue nil
+      counts = {}
+      counts['up'] = column.inner_text.match(/(\d+)\s(UP)/)[1] rescue 0
+      counts['down'] = column.inner_text.match(/(\d+)\s(DOWN)/)[1] rescue 0
+      return link, counts
+    end
+
+    def parse_service_status_summary(column)
+      text = column.css('td a')[0]
+      link = text['href'] rescue nil
+      counts = {}
+      counts['ok'] = column.inner_text.match(/(\d+)\s(OK)/)[1] rescue 0
+      counts['warning'] = column.inner_text.match(/(\d+)\s(WARNING)/)[1] rescue 0
+      counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue 0
+      counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
+      return link, counts
+    end
+
     def parse_status_html(response)
       doc = Nokogiri::HTML(response.to_s)
       rows = doc.css('table.status > tr')
@@ -339,6 +419,7 @@ class NagiosHarder
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
 
+          # Host column
           host = columns[0].inner_text.gsub(/\n/, '')
 
           # for a given host, the host details are blank after the first row
@@ -349,7 +430,9 @@ class NagiosHarder
             # or save it for later
             host = last_host
           end
+          debug 'parsed host column'
 
+          # Service Column
           if columns[1]
             service_links = columns[1].css('td a')
             service_link, other_links = service_links[0], service_links[1..-1]
@@ -366,8 +449,13 @@ class NagiosHarder
               acknowledged = other_links.any? do |link|
                 link.css('img').attribute('src').to_s =~ /ack\.gif/
               end
+
               notifications_disabled = other_links.any? do |link|
                 link.css('img').attribute('src').to_s =~ /ndisabled\.gif/
+              end
+
+              downtime = other_links.any? do |link|
+                link.css('img').attribute('src').to_s =~ /downtime\.gif/
               end
 
               extra_service_notes_link = other_links.detect do |link|
@@ -380,13 +468,21 @@ class NagiosHarder
 
             service = service_links[0].inner_html
           end
+          debug 'parsed service column'
 
+          # Status
           status = columns[2].inner_html  if columns[2]
+          debug 'parsed status column'
+
+          # Last Check
           last_check = if columns[3] && columns[3].inner_html != 'N/A'
                          last_check_str = columns[3].inner_html
-
+                         debug "Need to parse #{columns[3].inner_html} in #{nagios_time_format}"
                          DateTime.strptime(columns[3].inner_html, nagios_time_format).to_s
                        end
+          debug 'parsed last check column'
+
+          # Duration
           duration = columns[4].inner_html.squeeze(' ').gsub(/^ /, '') if columns[4]
           started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
                          (
@@ -396,8 +492,16 @@ class NagiosHarder
                            match_data[4].to_i.seconds
                          ).ago
                        end
+          debug 'parsed duration column'
+
+          # Attempts
           attempts = columns[5].inner_html if columns[5]
-          status_info = columns[6].inner_html.gsub('&nbsp;', '') if columns[6]
+          debug 'parsed attempts column'
+
+          # Status info
+          status_info = columns[6].inner_html.gsub('&nbsp;', '').gsub("\302\240", '') if columns[6]
+          debug 'parsed status info column'
+
 
           if host && service && status && last_check && duration && attempts && started_at && status_info
             service_extinfo_url = "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}"
@@ -417,7 +521,8 @@ class NagiosHarder
               :flapping => flapping,
               :comments_url => comments_url,
               :extra_service_notes_url => extra_service_notes_url,
-              :notifications_disabled => notifications_disabled
+              :notifications_disabled => notifications_disabled,
+              :downtime => downtime
 
             yield status
           end
@@ -427,6 +532,9 @@ class NagiosHarder
       nil
     end
 
-  end
+    def debug(*args)
+      $stderr.puts *args if ENV['DEBUG']
+    end
 
+  end
 end

@@ -23,8 +23,12 @@ class NagiosHarder
           end.map { |name, s| s }
         end
         true
-      when /^ack/
-        client.acknowledge_service(host, service, the_rest.join(' '))
+      when /^(ack|acknowledged)$/
+        if service.nil?
+          client.acknowledge_host(host, the_rest.join(' '))
+        else
+          client.acknowledge_service(host, service, the_rest.join(' '))
+        end
       when /^unack/
         client.unacknowledge_service(host, service)
       when /^(mute|disable_notifications)$/
@@ -38,30 +42,115 @@ class NagiosHarder
           client.schedule_host_check(host)
         end
       when 'downtime'
-        if service
-          client.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+        if the_rest == []
+          puts "Downtime requires duration in minutes."
+          false
         else
-          client.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          if service
+            client.schedule_service_downtime(host, service, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          else
+            client.schedule_host_downtime(host, :type => :fixed, :start_time => Time.now, :end_time => Time.now + the_rest.first.to_i.minutes)
+          end
         end
       when 'problems'
         service_table do
-          if param
-            client.service_status(:all_problems, :group => param)
-          else
-            client.service_status(:all_problems)
-          end
+          params = {
+            :service_status_types => [:critical, :warning, :unknown],
+          }
+          params[:group] = param
+          client.service_status(params)
+        end
+        true
+      when /^(critical|warning|unknown)/
+        service_table do
+          params = {
+            :service_status_types => [
+              $1,
+            ],
+            :service_props => [
+              :hard_state,
+              :no_scheduled_downtime,
+              :state_unacknowledged,
+              :notifications_enabled
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
         end
         true
       when /^(triage|unhandled)/
         service_table do
-          if param
-            client.service_status(:all_problems, :group => param, :hoststatustypes => 3, :serviceprops => 42, :servicestatustypes => 28)
-          else
-            client.service_status(:all_problems, :hoststatustypes => 3, :serviceprops => 42, :servicestatustypes => 28)
-          end
+          params = {
+            :service_status_types => [
+              :critical,
+              :warning,
+              :unknown
+            ],
+            :host_props => [
+              :no_scheduled_downtime,
+              :state_unacknowledged,
+              :notifications_enabled
+            ],
+            :service_props => [
+              :no_scheduled_downtime,
+              :state_unacknowledged,
+              :notifications_enabled
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
+        end
+        true
+      when /^servicegroups/
+        groups_table do
+          client.servicegroups_summary()
+        end
+        true
+      when /^hostgroups/
+        groups_table do
+          client.hostgroups_summary()
+        end
+        true
+      when /^muted/
+        service_table do
+          params = {
+            :service_props => [
+              :notifications_disabled,
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
+        end
+        true
+      when /^scheduled_downtime/
+        service_table do
+          params = {
+            :service_props => [
+              :scheduled_downtime,
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
+        end
+        true
+      when /^(acked|acknowledged)/
+        service_table do
+          params = {
+            :service_status_types => [
+              :critical,
+              :warning,
+              :unknown
+            ],
+            :service_props => [
+              :state_acknowledged,
+            ]
+          }
+          params[:group] = param
+          client.service_status(params)
         end
         true
       else
+        debug "'#{command}'"
         raise ArgumentError, help
       end
       if return_value
@@ -75,7 +164,8 @@ class NagiosHarder
     protected
 
     def client
-      @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'])
+      debug "loading client with options #{options.inspect}"
+      @client ||= NagiosHarder::Site.new(options['nagios_url'], options['user'], options['password'], options['version'], options['time'])
     end
 
     def parse_connection_options(argv)
@@ -106,8 +196,12 @@ class NagiosHarder
           options['nagios_url'] = nagios_url
         end
 
-        opts.on( '-v', '--version [3]', 'Nagios version (2 or 3, defaults to 3)') do |nagios_url|
-          options['version'] = nagios_url
+        opts.on( '-v', '--version [3]', 'Nagios version (2 or 3, defaults to 3)') do |version|
+          options['version'] = version
+        end
+
+        opts.on( '-t', '--time [us|euro]', 'Nagios time format') do |time|
+          options['time'] = time
         end
 
       end
@@ -125,6 +219,30 @@ class NagiosHarder
       options
     end
 
+    def groups_table
+      table = Terminal::Table.new(:headings => ['Group', 'Host Up', 'Host Down', 'Service Ok', 'Service Warning', 'Service Critical', 'Service Unknown']) do |t|
+        groups = yield
+        groups.each do |name, group|
+          t << group_row(group)
+        end
+        t
+      end
+      table.align_column(1, :right)
+      puts table
+    end
+
+    def group_row(group)
+      [
+        group['group'],
+        group['host_status_counts']['up'],
+        group['host_status_counts']['down'],
+        group['service_status_counts']['ok'],
+        group['service_status_counts']['warning'],
+        group['service_status_counts']['critical'],
+        group['service_status_counts']['unknown']
+      ]
+    end
+
     def service_table
       table = Terminal::Table.new(:headings => ['Service', 'Status', 'Details']) do |t|
         services = yield
@@ -140,6 +258,7 @@ class NagiosHarder
     def service_row(service)
       service['status'] << "/ACK" if service['acknowledged']
       service['status'] << "/MUTE" if service['notifications_disabled']
+      service['status'] << "/DOWNTIME" if service['downtime']
       service['status'] << "/COMMENT" if service['comments_url']
       [
         service['host']+"/"+service["service"],
@@ -152,6 +271,10 @@ class NagiosHarder
     def wrap_text(txt, col = 80)
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
         "\\1\\3\n")
+    end
+
+    def debug(*args)
+      $stderr.puts *args if ENV['DEBUG']
     end
 
     def help
@@ -170,6 +293,8 @@ COMMANDS:
     nagiosharder status aux1
     nagiosharder status aux1/http
 
+    nagiosharder acknowledge aux1 [message]
+
     nagiosharder acknowledge aux1/http [message]
     nagiosharder ack aux1/http [message]
 
@@ -184,7 +309,7 @@ COMMANDS:
     nagiosharder unmute aux1/http
     nagiosharder enable_notifications aux1/http
 
-    nagios check aux1/http
+    nagiosharder check aux1/http
 
     nagiosharder downtime aux1 15
     nagiosharder downtime aux1/http 15
@@ -192,9 +317,18 @@ COMMANDS:
     nagiosharder problems
     nagiosharder problems http-services
 
+    nagiosharder acknowledged
+    nagiosharder acked http-services
+
+    nagiosharder muted
+    nagiosharder muted http-services
+
     nagiosharder triage
     nagiosharder unhandled
     nagiosharder unhandled http-services
+
+    nagiosharder hostgroups
+    nagiosharder servicegroups
       HELP
     end
   end

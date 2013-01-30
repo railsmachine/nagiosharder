@@ -22,3 +22,5 @@ pkg
 nagiosharder*.gem
 .bundle
 vendor/gems
+config
+*.yml

@@ -4,5 +4,6 @@ begin
   exit NagiosHarder::Cli.new(ARGV).run
 rescue ArgumentError => e
   puts e.message
+  puts e.backtrace.join("\n") if ENV['DEBUG']
   exit 1
 end
