@@ -156,7 +156,7 @@ class NagiosHarder
       if return_value
         0
       else
-        puts "Sorry, bro, nagios didn't like that."
+        puts "Sorry yo, nagios didn't like that."
         1
       end
     end
