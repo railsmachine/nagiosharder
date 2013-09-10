@@ -223,6 +223,7 @@ class NagiosHarder
         params['style'] = 'detail'
         params['embedded'] = '1'
         params['noheader'] = '1'
+        params['limit'] = 0
       else
         if options[:group]
           params['servicegroup'] = options[:group]
@@ -257,7 +258,7 @@ class NagiosHarder
         hostgroups[status[:group]] = status
       end
 
-     hostgroups 
+     hostgroups
     end
 
     def servicegroups_summary(options = {})
@@ -275,7 +276,7 @@ class NagiosHarder
     end
 
     def host_status(host)
-      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1"
+      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1&limit=0"
       response =  get(host_status_url)
 
       raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
