@@ -17,10 +17,11 @@ class NagiosHarder
     def run
       return_value = case command
       when 'status'
-        status_checks = {}
+        status_checks = []
+        hostnames_and_check_names = [param,*the_rest]
 
         # for each hostname or checkname we got
-        param.each do |check|
+        hostnames_and_check_names.each do |check|
           host,service = check.split("/")
           check_info = client.host_status(host)
 
@@ -29,11 +30,11 @@ class NagiosHarder
           check_info.reject! { |name,s| service and service != name }
 
           # accumulate our results
-          status_checks.merge!(check_info)
+          status_checks += check_info.map { |name,service| service }
         end
 
         service_table do
-          status_checks.map { |name, s| s }
+          status_checks
         end
         true
       when /^(ack|acknowledged)$/
