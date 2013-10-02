@@ -18,7 +18,7 @@ class NagiosHarder
       return_value = case command
       when 'status'
         status_checks = []
-        hostnames_and_check_names = [param,*the_rest]
+        hostnames_and_check_names = [param,*the_rest].compact
 
         # for each hostname or checkname we got
         hostnames_and_check_names.each do |check|
