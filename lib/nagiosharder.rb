@@ -58,7 +58,7 @@ class NagiosHarder
 
     def acknowledge_service(host, service, comment)
       request = {
-        :cmd_typ => 34,
+        :cmd_typ => COMMANDS[:acknowledge_service_problem],
         :cmd_mod => 2,
         :com_author => @user,
         :com_data => comment,
@@ -74,7 +74,7 @@ class NagiosHarder
 
     def acknowledge_host(host, comment)
       request = {
-        :cmd_typ => 33,
+        :cmd_typ => COMMANDS[:acknowledge_host_problem],
         :cmd_mod => 2,
         :com_author => @user,
         :com_data => comment,
@@ -89,7 +89,7 @@ class NagiosHarder
 
     def unacknowledge_service(host, service)
       request = {
-        :cmd_typ => 52,
+        :cmd_typ => COMMANDS[:remove_service_acknowledgement],
         :cmd_mod => 2,
         :host => host,
         :service => service
@@ -101,7 +101,7 @@ class NagiosHarder
     def schedule_service_downtime(host, service, options = {})
       request = {
         :cmd_mod => 2,
-        :cmd_typ => 56,
+        :cmd_typ => COMMANDS[:schedule_service_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
         :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
         :host => host,
@@ -130,7 +130,7 @@ class NagiosHarder
     def schedule_host_downtime(host, options = {})
       request = {
         :cmd_mod => 2,
-        :cmd_typ => 55,
+        :cmd_typ => COMMANDS[:schedule_host_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
         :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
         :host => host,
@@ -184,7 +184,7 @@ class NagiosHarder
         :host => host,
         :service => service,
         :force_check => true,
-        :cmd_typ => 7,
+        :cmd_typ => COMMANDS[:schedule_service_check],
         :cmd_mod => 2
       }
       post_command(request)
@@ -296,10 +296,10 @@ class NagiosHarder
       }
 
       if service
-        request[:cmd_typ] = 23
+        request[:cmd_typ] = COMMANDS[:disable_service_notifications]
         request[:service] = service
       else
-        request[:cmd_typ] = 29
+        request[:cmd_typ] = COMMANDS[:disable_host_service_checks]
         request[:ahas] = true
       end
 
@@ -314,10 +314,10 @@ class NagiosHarder
       }
 
       if service
-        request[:cmd_typ] = 22
+        request[:cmd_typ] = COMMANDS[:enable_service_notifications]
         request[:service] = service
       else
-        request[:cmd_typ] = 28
+        request[:cmd_typ] = COMMANDS[:enable_host_service_notifications]
         request[:ahas] = true
       end
 
