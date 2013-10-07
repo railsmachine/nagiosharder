@@ -52,6 +52,8 @@ class NagiosHarder
     end
 
     def post_command(body)
+      # cmd_mod is always CMDMODE_COMMIT
+      body = {:cmd_mod => 2}.merge(body)
       response = post(cmd_url, :body => body)
       response.code == 200 && response.body =~ /successful/
     end
@@ -59,7 +61,6 @@ class NagiosHarder
     def acknowledge_service(host, service, comment)
       request = {
         :cmd_typ => COMMANDS[:acknowledge_service_problem],
-        :cmd_mod => 2,
         :com_author => @user,
         :com_data => comment,
         :host => host,
@@ -75,7 +76,6 @@ class NagiosHarder
     def acknowledge_host(host, comment)
       request = {
         :cmd_typ => COMMANDS[:acknowledge_host_problem],
-        :cmd_mod => 2,
         :com_author => @user,
         :com_data => comment,
         :host => host,
@@ -90,7 +90,6 @@ class NagiosHarder
     def unacknowledge_service(host, service)
       request = {
         :cmd_typ => COMMANDS[:remove_service_acknowledgement],
-        :cmd_mod => 2,
         :host => host,
         :service => service
       }
@@ -100,7 +99,6 @@ class NagiosHarder
 
     def schedule_service_downtime(host, service, options = {})
       request = {
-        :cmd_mod => 2,
         :cmd_typ => COMMANDS[:schedule_service_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
         :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
@@ -129,7 +127,6 @@ class NagiosHarder
 
     def schedule_host_downtime(host, options = {})
       request = {
-        :cmd_mod => 2,
         :cmd_typ => COMMANDS[:schedule_host_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
         :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
@@ -160,7 +157,6 @@ class NagiosHarder
     def cancel_downtime(downtime_id, downtime_type = :host_downtime)
       request = {
         :cmd_typ => DOWNTIME_TYPES[downtime_type],
-        :cmd_mod => 2,
         :down_id => downtime_id
       }
 
@@ -173,7 +169,6 @@ class NagiosHarder
         :host => host,
         :force_check => true,
         :cmd_typ => 96,
-        :cmd_mod => 2
       }
       post_command(request)
     end
@@ -185,7 +180,6 @@ class NagiosHarder
         :service => service,
         :force_check => true,
         :cmd_typ => COMMANDS[:schedule_service_check],
-        :cmd_mod => 2
       }
       post_command(request)
     end
@@ -291,7 +285,6 @@ class NagiosHarder
 
     def disable_service_notifications(host, service, options = {})
       request = {
-        :cmd_mod => 2,
         :host => host
       }
 
@@ -309,7 +302,6 @@ class NagiosHarder
 
     def enable_service_notifications(host, service, options = {})
       request = {
-        :cmd_mod => 2,
         :host => host
       }
 
