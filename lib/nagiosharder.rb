@@ -25,6 +25,11 @@ class NagiosHarder
     attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
+    DOWNTIME_TYPES = {
+      :host_downtime => 78,
+      :service_downtime => 79
+    }.freeze! unless defined? DOWNTIME_TYPES
+
     def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
@@ -46,6 +51,11 @@ class NagiosHarder
       self
     end
 
+    def post_command(body)
+      response = post(cmd_url, :body => body)
+      response.code == 200 && response.body =~ /successful/
+    end
+
     def acknowledge_service(host, service, comment)
       request = {
         :cmd_typ => 34,
@@ -59,8 +69,7 @@ class NagiosHarder
         :sticky_ack => true
       }
 
-      response = post(cmd_url, :body => request)
-      response.code == 200 && response.body =~ /successful/
+      post_command(request)
     end
 
     def acknowledge_host(host, comment)
@@ -75,8 +84,7 @@ class NagiosHarder
         :sticky_ack => true
       }
 
-      response = post(cmd_url, :body => request)
-      response.code == 200 && response.body =~ /successful/
+      post_command(request)
     end
 
     def unacknowledge_service(host, service)
@@ -87,8 +95,7 @@ class NagiosHarder
         :service => service
       }
 
-      response = post(cmd_url, :body => request)
-      response.code == 200 && response.body =~ /successful/
+      post_command(request)
     end
 
     def schedule_service_downtime(host, service, options = {})
@@ -117,9 +124,7 @@ class NagiosHarder
       request[:start_time] = formatted_time_for(options[:start_time])
       request[:end_time]   = formatted_time_for(options[:end_time])
 
-      response = post(cmd_url, :body => request)
-
-      response.code == 200 && response.body =~ /successful/
+      post_command(request)
     end
 
     def schedule_host_downtime(host, options = {})
@@ -149,45 +154,40 @@ class NagiosHarder
       request[:start_time] = formatted_time_for(options[:start_time])
       request[:end_time]   = formatted_time_for(options[:end_time])
 
-      response = post(cmd_url, :body => request)
-
-      response.code == 200 && response.body =~ /successful/
+      post_command(request)
     end
 
     def cancel_downtime(downtime_id, downtime_type = :host_downtime)
-      downtime_types = {
-        :host_downtime => 78,
-        :service_downtime => 79
+      request = {
+        :cmd_typ => DOWNTIME_TYPES[downtime_type],
+        :cmd_mod => 2,
+        :down_id => downtime_id
       }
-      response = post(cmd_url, :body => {
-                                        :cmd_typ => downtime_types[downtime_type],
-                                        :cmd_mod => 2,
-                                        :down_id => downtime_id
-                                        })
-      response.code == 200 && response.body =~ /successful/
+
+      post_command(request)
     end
 
     def schedule_host_check(host)
-      response = post(cmd_url, :body => {
-                                          :start_time => formatted_time_for(Time.now),
-                                          :host => host,
-                                          :force_check => true,
-                                          :cmd_typ => 96,
-                                          :cmd_mod => 2
-                                        })
-      response.code == 200 && response.body =~ /successful/
+      request = {
+        :start_time => formatted_time_for(Time.now),
+        :host => host,
+        :force_check => true,
+        :cmd_typ => 96,
+        :cmd_mod => 2
+      }
+      post_command(request)
     end
 
     def schedule_service_check(host, service)
-      response = post(cmd_url, :body => {
-                                          :start_time => formatted_time_for(Time.now),
-                                          :host => host,
-                                          :service => service,
-                                          :force_check => true,
-                                          :cmd_typ => 7,
-                                          :cmd_mod => 2
-                                        })
-      response.code == 200 && response.body =~ /successful/
+      request = {
+        :start_time => formatted_time_for(Time.now),
+        :host => host,
+        :service => service,
+        :force_check => true,
+        :cmd_typ => 7,
+        :cmd_mod => 2
+      }
+      post_command(request)
     end
 
     def service_status(options = {})
@@ -215,7 +215,7 @@ class NagiosHarder
         :hostprops,
         :serviceprops,
       ).each do |key|
-        params[key.to_s] = options[:val] if !options[:val].nil? && options[:val].match(/^\d*$/)
+        params[key.to_s] = options[:val] if options[:val] && options[:val].match(/^\d*$/)
       end
 
       if @version == 3
@@ -303,16 +303,8 @@ class NagiosHarder
         request[:ahas] = true
       end
 
-      response = post(cmd_url, :body => request)
-      if response.code == 200 && response.body =~ /successful/
-        # TODO enable waiting. seems to hang intermittently
-        #if options[:wait]
-        #  sleep(3) until service_notifications_disabled?(host, service)
-        #end
-        true
-      else
-        false
-      end
+      # TODO add option to block until the service shows as disabled
+      post_command(request)
     end
 
     def enable_service_notifications(host, service, options = {})
@@ -329,16 +321,8 @@ class NagiosHarder
         request[:ahas] = true
       end
 
-      response = post(cmd_url, :body => request)
-      if response.code == 200 && response.body =~ /successful/
-        # TODO enable waiting. seems to hang intermittently
-        #if options[:wait]
-        #  sleep(3) while service_notifications_disabled?(host, service)
-        #end
-        true
-      else
-        false
-      end
+      # TODO add option to block until the service shows as disabled
+      post_command(request)
     end
 
     def service_notifications_disabled?(host, service)
@@ -376,7 +360,7 @@ class NagiosHarder
           group = columns[0].inner_text.gsub(/\n/, '').match(/\((.*?)\)/)[1]
         end
 
-        if !group.nil?
+        if group
           host_status_url, host_status_counts = parse_host_status_summary(columns[1]) if columns[1]
           service_status_url, service_status_counts = parse_service_status_summary(columns[2]) if columns[2]
 
