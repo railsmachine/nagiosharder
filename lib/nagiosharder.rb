@@ -25,11 +25,6 @@ class NagiosHarder
     attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
-    DOWNTIME_TYPES = {
-      :host_downtime => 78,
-      :service_downtime => 79
-    }.freeze! unless defined? DOWNTIME_TYPES
-
     def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
@@ -156,7 +151,7 @@ class NagiosHarder
 
     def cancel_downtime(downtime_id, downtime_type = :host_downtime)
       request = {
-        :cmd_typ => DOWNTIME_TYPES[downtime_type],
+        :cmd_typ => COMMANDS["del_#{downtime_type}".to_sym],
         :down_id => downtime_id
       }
 

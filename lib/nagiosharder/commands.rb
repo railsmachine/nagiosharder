@@ -169,5 +169,5 @@ class NagiosHarder
     :del_downtime_by_hostgroup_name => 171,
     :del_downtime_by_start_time_comment => 172,
     :custom_command => 999
-  }
+  }.freeze unless defined? COMMANDS
 end
