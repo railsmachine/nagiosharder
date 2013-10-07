@@ -163,7 +163,7 @@ class NagiosHarder
         :start_time => formatted_time_for(Time.now),
         :host => host,
         :force_check => true,
-        :cmd_typ => 96,
+        :cmd_typ => COMMANDS[:schedule_host_check],
       }
       post_command(request)
     end
