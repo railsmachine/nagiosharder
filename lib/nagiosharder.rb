@@ -4,6 +4,7 @@ require 'active_support' # fine, we'll just do all of activesupport instead of t
 require 'cgi'
 require 'hashie'
 require 'nagiosharder/filters'
+require 'nagiosharder/commands'
 
 # :(
 require 'active_support/version' # double and triplely ensure ActiveSupport::VERSION is around
