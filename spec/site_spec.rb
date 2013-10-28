@@ -2,9 +2,23 @@ require 'spec_helper'
 
 describe 'NagiosHarder::Site' do
   let(:client) do
-    client = NagiosHarder::Site.new(ENV['NAGIOS_URL'], ENV['NAGIOS_USER'], ENV['NAGIOS_PASSWORD'])
+    client = NagiosHarder::Site.new(ENV['NAGIOS_URL']      || "",
+                                    ENV['NAGIOS_USER']     || "",
+                                    ENV['NAGIOS_PASSWORD'] || "")
     client.stub(:post)
     client
+  end
+
+  let(:successful_response) do
+    Class.new() do
+      def code
+        200
+      end
+
+      def body
+        "successful"
+      end
+    end.new
   end
 
   it 'should initialize' do
@@ -14,17 +28,8 @@ describe 'NagiosHarder::Site' do
   it 'should call post in post_command' do
     client.should_receive(:post) do |url, params|
       params[:body][:foo].should == :bar
-
       # Return an instance that makes the rest of the method work
-      Class.new() do
-        def code
-          200
-        end
-
-        def body
-          "successful"
-        end
-      end.new
+      successful_response
     end
 
     client.post_command({:foo => :bar}).should == true
