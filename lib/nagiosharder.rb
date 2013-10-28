@@ -51,7 +51,7 @@ class NagiosHarder
       # cmd_mod is always CMDMODE_COMMIT
       body = {:cmd_mod => 2}.merge(body)
       response = post(cmd_url, :body => body)
-      response.code == 200 && response.body =~ /successful/
+      response.code == 200 && response.body.match(/successful/) && true
     end
 
     def acknowledge_service(host, service, comment)
