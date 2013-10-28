@@ -23,8 +23,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec', '>= 1.2.9'
   s.add_development_dependency 'webmock'
 
-  s.files         = `git ls-files`.split('\n')
-  s.test_files    = `git ls-files -- {test,spec,features}/*`.split('\n')
+  s.files         = `git ls-files`.split("\n")
+  s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = ['nagiosharder']
   s.require_paths = ['lib']
 end
