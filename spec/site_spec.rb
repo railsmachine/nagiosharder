@@ -46,4 +46,37 @@ describe 'NagiosHarder::Site' do
 
     client.acknowledge_service('example.com', 'http', 'Looking')
   end
+
+  it 'should let you acknowledge a host' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should       == 'example.com'
+      params[:com_data].should   == 'Looking'
+      params[:com_author].should == client.user
+      params[:cmd_typ].should    == 33
+    end
+
+    client.acknowledge_host('example.com', 'Looking')
+  end
+
+  it 'should let you unacknowledge a service' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should       == 'example.com'
+      params[:service].should    == 'http'
+      params[:cmd_typ].should    == 52
+    end
+
+    client.unacknowledge_service('example.com', 'http')
+  end
+
+  it 'should let you schedule service downtime' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should       == 'example.com'
+      params[:service].should    == 'http'
+      params[:cmd_typ].should    == 52
+      params[:com_author].should_not be_blank
+      params[:com_data].should_not   be_blank
+    end
+
+    client.schedule_service_downtime('example.com', 'http')
+  end
 end
