@@ -90,4 +90,34 @@ describe 'NagiosHarder::Site' do
 
     client.schedule_host_downtime('example.com')
   end
+
+  it 'should let you cancel downtime' do
+    client.should_receive(:post_command) do |params|
+      params[:cmd_typ].should == 78
+      params[:down_id].should == 0
+    end
+
+    client.cancel_downtime(0)
+  end
+
+  it 'should let you schedule a host check' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should        == 'example.com'
+      params[:cmd_typ].should     == 96
+      params[:force_check].should == true
+    end
+
+    client.schedule_host_check('example.com')
+  end
+
+  it 'should let you schedule a service check' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should        == 'example.com'
+      params[:service].should     == 'http'
+      params[:cmd_typ].should     == 7
+      params[:force_check].should == true
+    end
+
+    client.schedule_service_check('example.com','http')
+  end
 end
