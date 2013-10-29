@@ -72,7 +72,7 @@ describe 'NagiosHarder::Site' do
     client.should_receive(:post_command) do |params|
       params[:host].should       == 'example.com'
       params[:service].should    == 'http'
-      params[:cmd_typ].should    == 52
+      params[:cmd_typ].should    == 56
       params[:com_author].should_not be_blank
       params[:com_data].should_not   be_blank
     end
