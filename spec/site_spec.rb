@@ -120,4 +120,22 @@ describe 'NagiosHarder::Site' do
 
     client.schedule_service_check('example.com','http')
   end
+
+  it 'should let you disable service notifications' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should        == 'example.com'
+      params[:service].should     == 'http'
+      params[:cmd_typ].should     == 23
+    end
+    client.disable_service_notifications('example.com', 'http')
+  end
+
+  it 'should let you enable service notifications' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should        == 'example.com'
+      params[:service].should     == 'http'
+      params[:cmd_typ].should     == 22
+    end
+    client.enable_service_notifications('example.com', 'http')
+  end
 end
