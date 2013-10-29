@@ -79,4 +79,15 @@ describe 'NagiosHarder::Site' do
 
     client.schedule_service_downtime('example.com', 'http')
   end
+
+  it 'should let you schedule host downtime' do
+    client.should_receive(:post_command) do |params|
+      params[:host].should       == 'example.com'
+      params[:cmd_typ].should    == 55
+      params[:com_author].should_not be_blank
+      params[:com_data].should_not   be_blank
+    end
+
+    client.schedule_host_downtime('example.com')
+  end
 end

@@ -124,6 +124,7 @@ class NagiosHarder
     end
 
     def schedule_host_downtime(host, options = {})
+      options[:type] ||= :fixed
       request = {
         :cmd_typ => COMMANDS[:schedule_host_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
@@ -146,8 +147,8 @@ class NagiosHarder
         request[:minutes] = options[:minutes]
       end
 
-      request[:start_time] = formatted_time_for(options[:start_time])
-      request[:end_time]   = formatted_time_for(options[:end_time])
+      request[:start_time] = formatted_time_for(options[:start_time] || Time.now)
+      request[:end_time]   = formatted_time_for(options[:end_time]   || Time.now + 1.hour)
 
       post_command(request)
     end
