@@ -158,7 +158,7 @@ class NagiosHarder
         :cmd_typ => COMMANDS["del_#{downtime_type}".to_sym],
         :down_id => downtime_id
       }
-
+      
       post_command(request)
     end
 
@@ -169,6 +169,7 @@ class NagiosHarder
         :force_check => true,
         :cmd_typ => COMMANDS[:schedule_host_check],
       }
+      
       post_command(request)
     end
 
@@ -180,6 +181,7 @@ class NagiosHarder
         :force_check => true,
         :cmd_typ => COMMANDS[:schedule_service_check],
       }
+      
       post_command(request)
     end
 
@@ -319,7 +321,45 @@ class NagiosHarder
     def service_notifications_disabled?(host, service)
       self.host_status(host)[service].notifications_disabled
     end
+    
+    def alert_history(options = {})
+      params = {}
+    
+      {
+        :state_type => :history_state,
+        :type => :history
+      }.each do |key, val|
+        if options[key] && (options[key].is_a?(Array) || options[key].is_a?(Symbol))
+          params[key.to_s.gsub(/_/, '')] = Nagiosharder::Filters.value(val, *options[key])
+        end
+      end
+      
+      # if any of the standard filter params are already integers, those win
+      %w(
+        :statetype,
+        :type
+      ).each do |key|
+        params[key.to_s] = options[:val] if !options[:val].nil? && options[:val].match(/^\d*$/)
+      end
+      
+      params['host'] = options[:host] || 'all'
+      params['archive'] = options[:archive] || '0'
+      
+      query = params.select {|k,v| v }.map {|k,v| "#{k}=#{v}" }.join('&')
+      
+      alert_history_url = "#{history_url}?#{query}"
+      puts alert_history_url
+      response = get(alert_history_url)
 
+      raise "wtf #{alert_history_url}? #{response.code}" unless response.code == 200
+
+      alerts = []
+      parse_history_html(response) do |alert|
+        alerts << alert
+      end
+
+      alerts
+    end
 
     def status_url
       "#{nagios_url}/status.cgi"
@@ -331,6 +371,10 @@ class NagiosHarder
 
     def extinfo_url
       "#{nagios_url}/extinfo.cgi"
+    end
+    
+    def history_url
+      "#{nagios_url}/history.cgi"
     end
 
     private
@@ -506,6 +550,39 @@ class NagiosHarder
       end
 
       nil
+    end
+    
+    def parse_history_html(response)
+      doc = Nokogiri::HTML(response.to_s)
+      alerts = doc.css('div.logEntries img')
+      
+      if alerts.any?
+        alerts.each do |row|
+          text = row.next.text.gsub('  ',';').split(/;|: /) unless row.next.text.nil?
+          # differentiate host vs service alert output in nagios.log
+          case
+            when text.length >= 8 # service alert
+              last_check, alert_type, host, service, status, state, attempt, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
+            when text.length == 7 # host alert
+              last_check, alert_type, host, status, state, attempt, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
+            when text.length == 6 # service flapping alert
+              last_check, alert_type, host, service, status, state, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
+            when text.length == 5 # scheduled host downtime
+              last_check, alert_type, host, status, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
+          end
+          
+          alert = Hashie::Mash.new :last_check => last_check.gsub('[','').gsub(']',''),
+            :alert_type => alert_type,
+            :host => host,
+            :service => service,
+            :status => status,
+            :state => state,
+            :attempt => attempt,
+            :extended_info => extended_info.nil? ? extended_info : extended_info.join(': ').strip
+          
+          yield alert
+        end
+      end
     end
 
     def debug(*args)

@@ -56,6 +56,13 @@ module Nagiosharder
     NOTIFICATION_HOST_FLAP=4096
     NOTIFICATION_SERVICE_CUSTOM=8192
     NOTIFICATION_HOST_CUSTOM=16384
+    
+    
+    #/********************** HOST AND SERVICE STATE TYPES **********************/
+
+    HISTORY_STATE_ALL=0
+    HISTORY_STATE_SOFT=1
+    HISTORY_STATE_HARD=2
 
 
     #/********************** HOST AND SERVICE ALERT TYPES **********************/
