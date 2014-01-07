@@ -35,15 +35,20 @@ class NagiosHarder
       @version = version
       debug_output if ENV['DEBUG']
       basic_auth(@user, @password) if @user && @password
-      @nagios_time_format = if nagios_time_format == 'us'
-         "%m-%d-%Y %H:%M:%S"
-      else
-        if @version.to_i < 3
-          "%m-%d-%Y %H:%M:%S"
-        else
-          "%Y-%m-%d %H:%M:%S"
-        end
-      end
+      @nagios_time_format = case nagios_time_format
+                            when 'us'
+                              "%m-%d-%Y %H:%M:%S"
+                            when 'euro'
+                              "%d-%m-%Y %H:%M:%S"
+                            when 'iso8601'
+                              "%Y-%m-%d %H:%M:%S"
+                            else
+                              if @version.to_i < 3
+                                "%m-%d-%Y %H:%M:%S"
+                              else
+                                "%Y-%m-%dT%H:%M:%S"
+                              end
+                            end
       self
     end
 
