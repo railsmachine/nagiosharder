@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'restclient'
 require 'nokogiri'
 require 'active_support' # fine, we'll just do all of activesupport instead of the parts I want. thank Rails 3 for shuffling requires around.
