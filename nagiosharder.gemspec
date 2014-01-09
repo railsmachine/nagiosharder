@@ -4,9 +4,10 @@ $:.push File.expand_path('../lib', __FILE__)
 Gem::Specification.new do |s|
   s.name        = 'nagiosharder'
   s.version     = '0.5.0.rc2'
+  s.date        = Time.now.strftime('%Y-%m-%d')
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ['Josh Nichols', 'Jesse Newland']
-  s.email       = ['josh@technicalpickles.com', 'jesse@github.com']
+  s.authors     = ['Josh Nichols', 'Jesse Newland', 'Travis Graham']
+  s.email       = ['josh@technicalpickles.com', 'jesse@github.com', 'travis@railsmachine.com']
   s.homepage    = 'http://github.com/railsmachine/nagiosharder'
   s.summary     = %q{Nagios access at your ruby fingertips}
   s.description = %q{Nagios access at your ruby fingertips}
