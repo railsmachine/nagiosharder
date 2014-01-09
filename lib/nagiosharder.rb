@@ -45,10 +45,10 @@ class NagiosHarder
                             when 'iso8601'
                               "%Y-%m-%d %H:%M:%S"
                             else
-                              if @version.to_i < 3
-                                "%m-%d-%Y %H:%M:%S"
-                              else
+                              if @version.to_i == 3 # allows compatability with nagios 4
                                 "%Y-%m-%dT%H:%M:%S"
+                              else
+                                "%m-%d-%Y %H:%M:%S"
                               end
                             end
       self
