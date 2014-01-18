@@ -276,10 +276,24 @@ class NagiosHarder
 
       servicegroups
     end
+    
+    def hostgroup_detail(group = "all")
+      hostgroup_detail_url = "#{status_url}?hostgroup=#{group}&style=hostdetail&embedded=1&noheader=1&limit=0"
+      response = get(hostgroup_detail_url)
+      
+      raise "wtf #{hostgroup_detail_url}? #{response.code}" unless response.code == 200
+      
+      hosts = {}
+      parse_detail_html(response) do |status|
+        hosts[status[:host]] = status
+      end
+      
+      hosts
+    end
 
     def host_status(host)
       host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1&limit=0"
-      response =  get(host_status_url)
+      response = get(host_status_url)
 
       raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
 
@@ -435,6 +449,59 @@ class NagiosHarder
       counts['critical'] = column.inner_text.match(/(\d+)\s(CRITICAL)/)[1] rescue 0
       counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
       return link, counts
+    end
+    
+    def parse_detail_html(response)
+      doc = Nokogiri::HTML(response.to_s)
+      rows = doc.css('table.status > tr')
+      
+      rows.each do |row|
+        columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
+        if columns.any?
+
+          # Host column
+          host = columns[0].css('a').text.strip
+          
+          # Status
+          status = columns[1].inner_html  if columns[1]
+          
+          # Last Check
+          last_check = if columns[2] && columns[2].inner_html != 'N/A'
+                         last_check_str = columns[2].inner_html
+                         debug "Need to parse #{columns[2].inner_html} in #{nagios_time_format}"
+                         DateTime.strptime(columns[2].inner_html, nagios_time_format).to_s
+                       end
+          debug 'parsed last check column'
+
+          # Duration
+          duration = columns[3].inner_html.squeeze(' ').gsub(/^ /, '') if columns[3]
+          started_at = if duration && match_data = duration.match(/^\s*(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s\s*$/)
+                         (
+                           match_data[1].to_i.days +
+                           match_data[2].to_i.hours +
+                           match_data[3].to_i.minutes +
+                           match_data[4].to_i.seconds
+                         ).ago
+                       end
+          debug 'parsed duration column'
+
+          # Status info
+          status_info = columns[4].inner_html.gsub('&nbsp;', '').gsub("\302\240", '').gsub("&#160;", '') if columns[4]
+          debug 'parsed status info column'
+          
+          if host && status && last_check && duration && started_at && status_info
+
+            status = Hashie::Mash.new :host => host,
+              :status => status,
+              :last_check => last_check,
+              :duration => duration,
+              :started_at => started_at,
+              :extended_info => status_info
+
+            yield status
+          end
+        end
+      end
     end
 
     def parse_status_html(response)
