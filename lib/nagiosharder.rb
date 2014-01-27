@@ -61,21 +61,6 @@ class NagiosHarder
       response.code == 200 && response.body.match(/successful/) && true
     end
 
-    def acknowledge_service(host, service, comment)
-      request = {
-        :cmd_typ => COMMANDS[:acknowledge_service_problem],
-        :com_author => @user,
-        :com_data => comment,
-        :host => host,
-        :service => service,
-        :send_notification => true,
-        :persistent => false,
-        :sticky_ack => true
-      }
-
-      post_command(request)
-    end
-
     def acknowledge_host(host, comment)
       request = {
         :cmd_typ => COMMANDS[:acknowledge_host_problem],
@@ -90,6 +75,30 @@ class NagiosHarder
       post_command(request)
     end
 
+    def unacknowledge_host(host)
+      request = {
+        :cmd_typ => COMMANDS[:remove_host_acknowledgement],
+        :host => host
+      }
+
+      post_command(request)
+    end
+    
+    def acknowledge_service(host, service, comment)
+      request = {
+        :cmd_typ => COMMANDS[:acknowledge_service_problem],
+        :com_author => @user,
+        :com_data => comment,
+        :host => host,
+        :service => service,
+        :send_notification => true,
+        :persistent => false,
+        :sticky_ack => true
+      }
+
+      post_command(request)
+    end
+    
     def unacknowledge_service(host, service)
       request = {
         :cmd_typ => COMMANDS[:remove_service_acknowledgement],
@@ -100,6 +109,37 @@ class NagiosHarder
       post_command(request)
     end
 
+    def schedule_host_downtime(host, options = {})
+      options[:type] ||= :fixed
+      
+      request = {
+        :cmd_typ => COMMANDS[:schedule_host_downtime],
+        :com_author => options[:author] || "#{@user} via nagiosharder",
+        :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
+        :host => host,
+        :childoptions => 0,
+        :trigger => 0
+      }
+
+      # FIXME we could use some option checking...
+
+      request[:fixed] = case options[:type].to_sym
+                        when :fixed then 1
+                        when :flexible then 0
+                        else 1 # default to fixed
+                        end
+
+      if request[:fixed] == 0
+        request[:hours]   = options[:hours]
+        request[:minutes] = options[:minutes]
+      end
+
+      request[:start_time] = formatted_time_for(options[:start_time] || Time.now)
+      request[:end_time]   = formatted_time_for(options[:end_time]   || Time.now + 1.hour)
+
+      post_command(request)
+    end
+    
     def schedule_service_downtime(host, service, options = {})
       options[:type] ||= :fixed
 
@@ -120,36 +160,6 @@ class NagiosHarder
 
 
      if request[:fixed] == 0
-        request[:hours]   = options[:hours]
-        request[:minutes] = options[:minutes]
-      end
-
-      request[:start_time] = formatted_time_for(options[:start_time] || Time.now)
-      request[:end_time]   = formatted_time_for(options[:end_time]   || Time.now + 1.hour)
-
-      post_command(request)
-    end
-
-    def schedule_host_downtime(host, options = {})
-      options[:type] ||= :fixed
-      request = {
-        :cmd_typ => COMMANDS[:schedule_host_downtime],
-        :com_author => options[:author] || "#{@user} via nagiosharder",
-        :com_data => options[:comment] || 'scheduled downtime by nagiosharder',
-        :host => host,
-        :childoptions => 0,
-        :trigger => 0
-      }
-
-      # FIXME we could use some option checking...
-
-      request[:fixed] = case options[:type].to_sym
-                        when :fixed then 1
-                        when :flexible then 0
-                        else 1 # default to fixed
-                        end
-
-      if request[:fixed] == 0
         request[:hours]   = options[:hours]
         request[:minutes] = options[:minutes]
       end
@@ -190,6 +200,20 @@ class NagiosHarder
       }
       
       post_command(request)
+    end
+    
+    def host_status(host)
+      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1&limit=0"
+      response = get(host_status_url)
+
+      raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
+
+      services = {}
+      parse_status_html(response) do |status|
+        services[status[:service]] = status
+      end
+
+      services
     end
 
     def service_status(options = {})
@@ -249,8 +273,8 @@ class NagiosHarder
       statuses
     end
 
-    def hostgroups_summary(options = {})
-      hostgroups_summary_url = "#{status_url}?hostgroup=all&style=summary"
+    def hostgroups_summary(hostgroup = "all")
+      hostgroups_summary_url = "#{status_url}?hostgroup=#{hostgroup}&style=summary"
       response = get(hostgroups_summary_url)
 
       raise "wtf #{hostgroups_summary_url}? #{response.code}" unless response.code == 200
@@ -263,8 +287,8 @@ class NagiosHarder
      hostgroups
     end
 
-    def servicegroups_summary(options = {})
-      servicegroups_summary_url = "#{status_url}?servicegroup=all&style=summary"
+    def servicegroups_summary(servicegroup = "all")
+      servicegroups_summary_url = "#{status_url}?servicegroup=#{servicegroup}&style=summary"
       response = get(servicegroups_summary_url)
 
       raise "wtf #{servicegroups_summary_url}? #{response.code}" unless response.code == 200
@@ -277,11 +301,11 @@ class NagiosHarder
       servicegroups
     end
     
-    def hostgroup_detail(group = "all")
-      hostgroup_detail_url = "#{status_url}?hostgroup=#{group}&style=hostdetail&embedded=1&noheader=1&limit=0"
-      response = get(hostgroup_detail_url)
+    def hostgroups_detail(hostgroup = "all")
+      hostgroups_detail_url = "#{status_url}?hostgroup=#{hostgroup}&style=hostdetail&embedded=1&noheader=1&limit=0"
+      response = get(hostgroups_detail_url)
       
-      raise "wtf #{hostgroup_detail_url}? #{response.code}" unless response.code == 200
+      raise "wtf #{hostgroups_detail_url}? #{response.code}" unless response.code == 200
       
       hosts = {}
       parse_detail_html(response) do |status|
@@ -289,20 +313,6 @@ class NagiosHarder
       end
       
       hosts
-    end
-
-    def host_status(host)
-      host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1&limit=0"
-      response = get(host_status_url)
-
-      raise "wtf #{host_status_url}? #{response.code}" unless response.code == 200
-
-      services = {}
-      parse_status_html(response) do |status|
-        services[status[:service]] = status
-      end
-
-      services
     end
 
     def disable_service_notifications(host, service, options = {})
@@ -490,13 +500,15 @@ class NagiosHarder
           debug 'parsed status info column'
           
           if host && status && last_check && duration && started_at && status_info
-
+            host_extinfo_url = "#{extinfo_url}?type=1&host=#{host}"
+            
             status = Hashie::Mash.new :host => host,
               :status => status,
               :last_check => last_check,
               :duration => duration,
               :started_at => started_at,
-              :extended_info => status_info
+              :extended_info => status_info,
+              :host_extinfo_url => host_extinfo_url
 
             yield status
           end
@@ -645,6 +657,9 @@ class NagiosHarder
               last_check, alert_type, host, status, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
           end
           
+          service_extinfo_url = service ? "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}" : nil
+          host_extinfo_url = "#{extinfo_url}?type=1&host=#{host}"
+          
           alert = Hashie::Mash.new :last_check => last_check.gsub('[','').gsub(']',''),
             :alert_type => alert_type,
             :host => host,
@@ -652,7 +667,9 @@ class NagiosHarder
             :status => status,
             :state => state,
             :attempt => attempt,
-            :extended_info => extended_info.nil? ? extended_info : extended_info.join(': ').strip
+            :extended_info => extended_info.nil? ? extended_info : extended_info.join(': ').strip,
+            :host_extinfo_url => host_extinfo_url,
+            :service_extinfo_url => service_extinfo_url
           
           yield alert
         end
