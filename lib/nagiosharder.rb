@@ -28,11 +28,11 @@ class NagiosHarder
     attr_accessor :nagios_url, :user, :password, :default_options, :default_cookies, :version, :nagios_time_format
     include HTTParty::ClassMethods
 
-    def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil)
+    def initialize(nagios_url, user, password, version = 3, nagios_time_format = nil, ssl_verify = true)
       @nagios_url = nagios_url.gsub(/\/$/, '')
       @user = user
       @password = password
-      @default_options = {}
+      @default_options = {:verify => ssl_verify}
       @default_cookies = {}
       @version = version
       debug_output if ENV['DEBUG']

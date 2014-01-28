@@ -9,9 +9,10 @@ Now you have access to both a Ruby interface and a command line interface.
 Here's some examples to get you started with the Ruby API:
 
     require 'nagiosharder'
-    site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version', 'time_format')
+    site = NagiosHarder::Site.new('http://path/to/nagios/cgi/directory', 'user', 'password', 'version', 'time_format', 'verify_ssl')
     # version defaults to 3
     # time_format defaults to 'strict-iso8601' for version 3 and 'us' for all other versions
+    # verify_ssl defaults to true, pass false to override
 
 Get details back about a host's services:
 
