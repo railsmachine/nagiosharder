@@ -6,11 +6,11 @@ Query and command a Nagios install using the power of ruby (and lots of screen-s
 
 Now you have access to both a Ruby interface and a command line interface.
 
-Here's some examples to get you started with the Ruby API:
+Here are some examples to get you started with the Ruby API:
 
     require 'nagiosharder'
     
-    cgi         = 'http://path/to/nagios/cgi/directory'
+    cgi         = 'https://path/to/nagios/cgi/directory'
     user        = 'user'
     pass        = 'pass'
     version     = 3
