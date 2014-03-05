@@ -517,7 +517,7 @@ class NagiosHarder
     end
 
     def parse_status_html(response)
-      doc = Nokogiri::HTML(response.to_s)
+      doc = Nokogiri::HTML(response.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').to_s)
       rows = doc.css('table.status > tr')
 
       last_host = nil
