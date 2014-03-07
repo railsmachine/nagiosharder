@@ -3,7 +3,7 @@ $:.push File.expand_path('../lib', __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = 'nagiosharder'
-  s.version     = '0.5.0.rc2'
+  s.version     = '0.5.0'
   s.date        = Time.now.strftime('%Y-%m-%d')
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Josh Nichols', 'Jesse Newland', 'Travis Graham']
