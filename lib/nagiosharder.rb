@@ -83,7 +83,7 @@ class NagiosHarder
 
       post_command(request)
     end
-    
+
     def acknowledge_service(host, service, comment)
       request = {
         :cmd_typ => COMMANDS[:acknowledge_service_problem],
@@ -98,7 +98,7 @@ class NagiosHarder
 
       post_command(request)
     end
-    
+
     def unacknowledge_service(host, service)
       request = {
         :cmd_typ => COMMANDS[:remove_service_acknowledgement],
@@ -111,7 +111,7 @@ class NagiosHarder
 
     def schedule_host_downtime(host, options = {})
       options[:type] ||= :fixed
-      
+
       request = {
         :cmd_typ => COMMANDS[:schedule_host_downtime],
         :com_author => options[:author] || "#{@user} via nagiosharder",
@@ -139,7 +139,7 @@ class NagiosHarder
 
       post_command(request)
     end
-    
+
     def schedule_service_downtime(host, service, options = {})
       options[:type] ||= :fixed
 
@@ -175,7 +175,7 @@ class NagiosHarder
         :cmd_typ => COMMANDS["del_#{downtime_type}".to_sym],
         :down_id => downtime_id
       }
-      
+
       post_command(request)
     end
 
@@ -186,7 +186,7 @@ class NagiosHarder
         :force_check => true,
         :cmd_typ => COMMANDS[:schedule_host_check],
       }
-      
+
       post_command(request)
     end
 
@@ -198,10 +198,10 @@ class NagiosHarder
         :force_check => true,
         :cmd_typ => COMMANDS[:schedule_service_check],
       }
-      
+
       post_command(request)
     end
-    
+
     def host_status(host)
       host_status_url = "#{status_url}?host=#{host}&embedded=1&noheader=1&limit=0"
       response = get(host_status_url)
@@ -300,18 +300,18 @@ class NagiosHarder
 
       servicegroups
     end
-    
+
     def hostgroups_detail(hostgroup = "all")
       hostgroups_detail_url = "#{status_url}?hostgroup=#{hostgroup}&style=hostdetail&embedded=1&noheader=1&limit=0"
       response = get(hostgroups_detail_url)
-      
+
       raise "wtf #{hostgroups_detail_url}? #{response.code}" unless response.code == 200
-      
+
       hosts = {}
       parse_detail_html(response) do |status|
         hosts[status[:host]] = status
       end
-      
+
       hosts
     end
 
@@ -324,7 +324,7 @@ class NagiosHarder
         request[:cmd_typ] = COMMANDS[:disable_service_notifications]
         request[:service] = service
       else
-        request[:cmd_typ] = COMMANDS[:disable_host_service_checks]
+        request[:cmd_typ] = COMMANDS[:disable_host_service_notifications]
         request[:ahas] = true
       end
 
@@ -352,10 +352,10 @@ class NagiosHarder
     def service_notifications_disabled?(host, service)
       self.host_status(host)[service].notifications_disabled
     end
-    
+
     def alert_history(options = {})
       params = {}
-    
+
       {
         :state_type => :history_state,
         :type => :history
@@ -364,7 +364,7 @@ class NagiosHarder
           params[key.to_s.gsub(/_/, '')] = Nagiosharder::Filters.value(val, *options[key])
         end
       end
-      
+
       # if any of the standard filter params are already integers, those win
       %w(
         :statetype,
@@ -372,12 +372,12 @@ class NagiosHarder
       ).each do |key|
         params[key.to_s] = options[:val] if !options[:val].nil? && options[:val].match(/^\d*$/)
       end
-      
+
       params['host'] = options[:host] || 'all'
       params['archive'] = options[:archive] || '0'
-      
+
       query = params.select {|k,v| v }.map {|k,v| "#{k}=#{v}" }.join('&')
-      
+
       alert_history_url = "#{history_url}?#{query}"
       puts alert_history_url
       response = get(alert_history_url)
@@ -403,7 +403,7 @@ class NagiosHarder
     def extinfo_url
       "#{nagios_url}/extinfo.cgi"
     end
-    
+
     def history_url
       "#{nagios_url}/history.cgi"
     end
@@ -460,21 +460,21 @@ class NagiosHarder
       counts['unknown'] = column.inner_text.match(/(\d+)\s(UNKNOWN)/)[1] rescue 0
       return link, counts
     end
-    
+
     def parse_detail_html(response)
       doc = Nokogiri::HTML(response.to_s)
       rows = doc.css('table.status > tr')
-      
+
       rows.each do |row|
         columns = Nokogiri::HTML(row.inner_html).css('body > td').to_a
         if columns.any?
 
           # Host column
           host = columns[0].css('a').text.strip
-          
+
           # Status
           status = columns[1].inner_html  if columns[1]
-          
+
           # Last Check
           last_check = if columns[2] && columns[2].inner_html != 'N/A'
                          last_check_str = columns[2].inner_html
@@ -498,10 +498,10 @@ class NagiosHarder
           # Status info
           status_info = columns[4].inner_html.gsub('&nbsp;', '').gsub("\302\240", '').gsub("&#160;", '') if columns[4]
           debug 'parsed status info column'
-          
+
           if host && status && last_check && duration && started_at && status_info
             host_extinfo_url = "#{extinfo_url}?type=1&host=#{host}"
-            
+
             status = Hashie::Mash.new :host => host,
               :status => status,
               :last_check => last_check,
@@ -637,11 +637,11 @@ class NagiosHarder
 
       nil
     end
-    
+
     def parse_history_html(response)
       doc = Nokogiri::HTML(response.to_s)
       alerts = doc.css('div.logEntries img')
-      
+
       if alerts.any?
         alerts.each do |row|
           text = row.next.text.gsub('  ',';').split(/;|: /) unless row.next.text.nil?
@@ -656,10 +656,10 @@ class NagiosHarder
             when text.length == 5 # scheduled host downtime
               last_check, alert_type, host, status, *extended_info = row.next.text.gsub('  ',';').split(/;|: /)
           end
-          
+
           service_extinfo_url = service ? "#{extinfo_url}?type=2&host=#{host}&service=#{CGI.escape(service)}" : nil
           host_extinfo_url = "#{extinfo_url}?type=1&host=#{host}"
-          
+
           alert = Hashie::Mash.new :last_check => last_check.gsub('[','').gsub(']',''),
             :alert_type => alert_type,
             :host => host,
@@ -670,7 +670,7 @@ class NagiosHarder
             :extended_info => extended_info.nil? ? extended_info : extended_info.join(': ').strip,
             :host_extinfo_url => host_extinfo_url,
             :service_extinfo_url => service_extinfo_url
-          
+
           yield alert
         end
       end
