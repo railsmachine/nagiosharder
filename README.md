@@ -181,6 +181,5 @@ This will display all available commands.
 * Commit, do not mess with rakefile, version, or history.  (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
 * Send me a pull request. Bonus points for topic branches.
 
-#### Copyright
-
-Copyright (c) 2010 Josh Nichols. See LICENSE for details.
+***
+Unless otherwise specified, all content copyright &copy; 2014, [Rails Machine, LLC](http://railsmachine.com)
