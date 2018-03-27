@@ -472,6 +472,13 @@ class NagiosHarder
           # Host column
           host = columns[0].css('a').text.strip
 
+          # Acknowledged column
+          if columns[0].css('img[title="This host problem has been acknowledged"]').length > 0
+            acknowledged = true
+          else
+            acknowledged = false
+          end
+
           # Status
           status = columns[1].inner_html  if columns[1]
 
@@ -504,6 +511,7 @@ class NagiosHarder
 
             status = Hashie::Mash.new :host => host,
               :status => status,
+              :acknowledged => acknowledged,
               :last_check => last_check,
               :duration => duration,
               :started_at => started_at,
